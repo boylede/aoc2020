@@ -1,4 +1,4 @@
-use aoc2020::{Day, Session, RunError, SessionError, RunResult};
+use aoc2020::{Day, PartResult, RunError, RunResult, Session, SessionError};
 use clap::Clap;
 
 /// Advent of Code 2020 entries
@@ -54,22 +54,24 @@ fn run_day(day: &Day, config: &Config) {
         if let Ok(session) = session {
             let output = day.cache_input_and_run(&session);
             match output {
-                Ok(result) => if config.accept {
-                    cache_result(result);
-                },
+                Ok(result) => {
+                    if config.accept {
+                        cache_result(result);
+                    }
+                }
                 Err(e) => print_error(e),
             }
         } else {
-            println!(
-                "Please create a session.txt file or provide --session on the command line."
-            );
+            println!("Please create a session.txt file or provide --session on the command line.");
         }
     } else if config.input == None {
         let output = day.run_with_cached_input();
         match output {
-            Ok(result) => if config.accept {
-                cache_result(result);
-            },
+            Ok(result) => {
+                if config.accept {
+                    cache_result(result);
+                }
+            }
             Err(e) => print_error(e),
         }
     } else {
@@ -92,7 +94,7 @@ fn print_error(err: RunError) {
         SessionFailed(DomError) => println!("Unable to parse DOM."),
         CacheError => println!("No cached input available."),
         InputError => println!("Couldn't open test input file."),
-        DayError(reason) => println!("{}", reason),
+        DayError(reason) => println!("Errors with this Day: {}", reason),
     }
 }
 
