@@ -41,7 +41,33 @@ pub const DAYS: &[Day] = &[
     day_element!(day6, 6),
 ];
 
-type PartFunction = fn(&Vec<String>) -> String;
+pub enum RunError {
+    SessionFailed(SessionError),
+    CacheError,
+    InputError,
+    DayError(String),
+}
+impl std::convert::From<PartError> for RunError {
+    fn from(err: PartError) -> RunError {
+        use PartError::*;
+        use RunError::*;
+        match err {
+            Unimplemented => DayError("Unimplemented".to_string()),
+            Failed(reason) => DayError(reason),
+        }
+    }
+}
+
+pub type RunResult = Result<(String, String), RunError>;
+
+pub enum PartError {
+    Unimplemented,
+    Failed(String),
+}
+
+pub type PartResult = Result<String, PartError>;
+
+pub type PartFunction = fn(&Vec<String>) -> PartResult;
 
 /// Wrap the day's runner function so we can store all loaded days in a vec
 pub struct Day {
@@ -51,7 +77,7 @@ pub struct Day {
 }
 
 impl Day {
-    pub fn run(self: &Self, input: File) {
+    pub fn run(self: &Self, input: File) -> RunResult {
         println!("loading day {} input.", self.index);
         let a_time = time::precise_time_ns();
         let mut lines = vec![];
@@ -69,59 +95,40 @@ impl Day {
             println!("Loading took: {}ns", total_time);
         }
         let a_time = time::precise_time_ns();
-        let part1 = (self.part1)(&lines);
+        let part1 = (self.part1)(&lines)?;
         println!("Part 1 result: {}", part1);
         let b_time = time::precise_time_ns();
-        let part2 = (self.part2)(&lines);
+        let part2 = (self.part2)(&lines)?;
         println!("Part 2 result: {}", part2);
         let c_time = time::precise_time_ns();
         println!("Day {} Part 1 took: {}ns", self.index, b_time - a_time);
         println!("Day {} Part 2 took: {}ns", self.index, c_time - b_time);
+        Ok((part1, part2))
     }
-    pub fn cache_input_and_run(&self, session: &Session) {
-        let file = cache_files(self.index, &session);
-        match file {
-            Ok(input) => self.run(input),
-            Err(SessionError::TokenFormat) => {
-                println!("Session token was unreadable.");
-            }
-            Err(SessionError::IoError(desc)) => {
-                println!("{}", desc);
-            }
-            Err(SessionError::NetworkError) => {
-                println!("Network request failed");
-            }
-            Err(SessionError::BufferError) => {
-                println!("An error occured while writing memory.");
-            }
-            Err(SessionError::DomError) => {
-                println!("Unable to parse DOM");
-            }
-        }
+    pub fn cache_input_and_run(&self, session: &Session) -> RunResult {
+        let input =
+            cache_files(self.index, &session).map_err(|err| RunError::SessionFailed(err))?;
+        self.run(input)
     }
-    pub fn run_with_cached_input(&self) {
+    pub fn run_with_cached_input(&self) -> RunResult {
         let file_path = input_cache_path(self.index);
-        let file = fs::OpenOptions::new()
+        let input = fs::OpenOptions::new()
             .read(true)
             .write(false)
             .create(false)
-            .open(&file_path);
-        match file {
-            Ok(input) => self.run(input),
-            Err(_) => println!("No cached input available"),
-        }
+            .open(&file_path)
+            .map_err(|_| RunError::CacheError)?;
+        self.run(input)
+        
     }
-    pub fn run_with_test_input(&self, input_filename: &str) {
-        let file = fs::OpenOptions::new()
+    pub fn run_with_test_input(&self, input_filename: &str) -> RunResult {
+        let input = fs::OpenOptions::new()
             .read(true)
             .write(false)
             .create(false)
-            .open(input_filename);
-        if let Ok(input) = file {
-            self.run(input);
-        } else {
-            println!("couldn't open test input file {}", input_filename);
-        }
+            .open(input_filename)
+            .map_err(|_| RunError::InputError)?;
+        self.run(input)
     }
 }
 

@@ -1,13 +1,15 @@
-pub fn part1(lines: &Vec<String>) -> String {
+use crate::{PartError, PartResult};
+
+pub fn part1(lines: &Vec<String>) -> PartResult {
     let result = 0;
     // code here
 
-    result.to_string()
+    Ok(result.to_string())
 }
 
-pub fn part2(lines: &Vec<String>) -> String {
+pub fn part2(lines: &Vec<String>) -> PartResult {
     let result = 0;
     // code here
 
-    result.to_string()
+    Ok(result.to_string())
 }

@@ -1,6 +1,4 @@
-use aoc2020::Day;
-use aoc2020::Session;
-
+use aoc2020::{Day, Session, RunError, SessionError, RunResult};
 use clap::Clap;
 
 /// Advent of Code 2020 entries
@@ -16,7 +14,7 @@ pub struct Config {
     /// dry-run the program offline
     #[clap(short = 'o', long = "offline")]
     pub offline: bool,
-    /// provide a session token on the command line or in a session.txt file
+    /// provide session token on the command line or in a session.txt file
     #[clap(short = 's', long = "session")]
     pub session: Option<String>,
     /// provide alternate input for testing
@@ -50,16 +48,35 @@ fn run_day(day: &Day, config: &Config) {
         } else {
             Session::from_file("session.txt")
         };
-        match session {
-            Ok(session) => day.cache_input_and_run(&session),
-            Err(_) => println!(
+        if let Ok(session) = session {
+            let output = day.cache_input_and_run(&session);
+        } else {
+            println!(
                 "Please create a session.txt file or provide --session on the command line."
-            ),
+            );
         }
     } else if config.input == None {
-        day.run_with_cached_input();
+        let output = day.run_with_cached_input();
     } else {
         let input_filename = config.input.as_ref().expect("unreachable");
-        day.run_with_test_input(&input_filename);
+        let output = day.run_with_test_input(&input_filename);
+        if let Err(e) = output {
+            print_error(e);
+        }
+    }
+}
+
+fn print_error(err: RunError) {
+    use RunError::*;
+    use SessionError::*;
+    match err {
+        SessionFailed(TokenFormat) => println!("Session token was unreadable."),
+        SessionFailed(IoError(desc)) => println!("{}", desc),
+        SessionFailed(NetworkError) => println!("Network request failed."),
+        SessionFailed(BufferError) => println!("An error occured while writing memory."),
+        SessionFailed(DomError) => println!("Unable to parse DOM."),
+        CacheError => println!("No cached input available."),
+        InputError => println!("Couldn't open test input file."),
+        DayError(reason) => println!("{}", reason),
     }
 }
