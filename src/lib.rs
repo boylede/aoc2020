@@ -47,19 +47,10 @@ pub enum RunError {
     InputError,
     DayError(String),
 }
-impl std::convert::From<PartError> for RunError {
-    fn from(err: PartError) -> RunError {
-        use PartError::*;
-        use RunError::*;
-        match err {
-            Unimplemented => DayError("Unimplemented".to_string()),
-            Failed(reason) => DayError(reason),
-        }
-    }
-}
 
 pub type RunResult = Result<(String, String), RunError>;
 
+#[derive(Debug)]
 pub enum PartError {
     Unimplemented,
     Failed(String),
@@ -95,15 +86,28 @@ impl Day {
             println!("Loading took: {}ns", total_time);
         }
         let a_time = time::precise_time_ns();
-        let part1 = (self.part1)(&lines)?;
-        println!("Part 1 result: {}", part1);
+        let part1 = (self.part1)(&lines);
+        println!(
+            "Part 1 result: {}",
+            part1.as_ref().map(|s| s.as_str()).unwrap_or("failed!")
+        );
         let b_time = time::precise_time_ns();
-        let part2 = (self.part2)(&lines)?;
-        println!("Part 2 result: {}", part2);
+        let part2 = (self.part2)(&lines);
+        println!(
+            "Part 2 result: {}",
+            part2.as_ref().map(|s| s.as_str()).unwrap_or("failed!")
+        );
         let c_time = time::precise_time_ns();
         println!("Day {} Part 1 took: {}ns", self.index, b_time - a_time);
         println!("Day {} Part 2 took: {}ns", self.index, c_time - b_time);
-        Ok((part1, part2))
+        
+        use RunError::DayError;
+        match (part1, part2) {
+            (Ok(result1), Ok(result2)) => Ok((result1, result2)),
+            (Err(err1), Ok(result2)) => Err(DayError(format!("part 1 error: {:?}, part 2 success: {}", err1, result2))),
+            (Ok(result1), Err(err2)) => Err(DayError(format!("part 1 success: {}, part 2 error: {:?}", result1, err2))),
+            (Err(err1), Err(err2)) => Err(DayError(format!("part 1 error: {:?}, part 2 error: {:?}", err1, err2))),
+        }
     }
     pub fn cache_input_and_run(&self, session: &Session) -> RunResult {
         let input =
@@ -119,7 +123,6 @@ impl Day {
             .open(&file_path)
             .map_err(|_| RunError::CacheError)?;
         self.run(input)
-        
     }
     pub fn run_with_test_input(&self, input_filename: &str) -> RunResult {
         let input = fs::OpenOptions::new()
