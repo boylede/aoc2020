@@ -4,8 +4,8 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Cursor, Seek, SeekFrom, Write};
 
 use reqwest::{
-    header::{HeaderMap, HeaderName, HeaderValue},
     blocking::Client,
+    header::{HeaderMap, HeaderName, HeaderValue},
 };
 
 use select::document::Document;
@@ -76,7 +76,7 @@ impl Day {
             .create(false)
             .open(input_filename);
         if let Ok(input) = file {
-            (self.runner)(input);
+            self.run(input);
         } else {
             println!("couldn't open test input file {}", input_filename);
         }

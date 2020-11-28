@@ -60,6 +60,6 @@ fn run_day(day: &Day, config: &Config) {
         day.run_with_cached_input();
     } else {
         let input_filename = config.input.as_ref().expect("unreachable");
-            day.run_with_test_input(&input_filename);
+        day.run_with_test_input(&input_filename);
     }
 }
