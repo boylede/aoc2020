@@ -20,6 +20,9 @@ pub struct Config {
     /// provide alternate input for testing
     #[clap(short = 'i', long = "input")]
     pub input: Option<String>,
+    /// cache result for regression testing
+    #[clap(long = "accept")]
+    pub accept: bool,
 }
 
 fn main() {
@@ -50,6 +53,12 @@ fn run_day(day: &Day, config: &Config) {
         };
         if let Ok(session) = session {
             let output = day.cache_input_and_run(&session);
+            match output {
+                Ok(result) => if config.accept {
+                    cache_result(result);
+                },
+                Err(e) => print_error(e),
+            }
         } else {
             println!(
                 "Please create a session.txt file or provide --session on the command line."
@@ -57,6 +66,12 @@ fn run_day(day: &Day, config: &Config) {
         }
     } else if config.input == None {
         let output = day.run_with_cached_input();
+        match output {
+            Ok(result) => if config.accept {
+                cache_result(result);
+            },
+            Err(e) => print_error(e),
+        }
     } else {
         let input_filename = config.input.as_ref().expect("unreachable");
         let output = day.run_with_test_input(&input_filename);
@@ -79,4 +94,8 @@ fn print_error(err: RunError) {
         InputError => println!("Couldn't open test input file."),
         DayError(reason) => println!("{}", reason),
     }
+}
+
+fn cache_result(result: (String, String)) {
+    unimplemented!()
 }
