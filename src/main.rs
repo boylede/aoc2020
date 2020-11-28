@@ -82,7 +82,7 @@ fn run_day(day: &Day, config: &Config) {
     println!("Running day: {}", &day);
     if !config.offline {
         let session = if config.session.len() > 0 {
-            Ok(Session::new(&config.session))
+            Session::new(&config.session)
         } else {
             Session::from_file("session.txt")
         };

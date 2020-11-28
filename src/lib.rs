@@ -71,7 +71,7 @@ impl fmt::Display for Day {
     }
 }
 
-pub fn cache_files(day: i32, session: &Session) -> Result<File, std::io::Error> {
+pub fn cache_files(day: i32, session: &Session) -> Result<File, SessionError> {
     cache_instructions_for_day(day, &session)?;
     cache_input_for_day(day, &session)
 }
@@ -89,7 +89,7 @@ pub fn instruction_cache_url(day: i32) -> String {
     format!("https://adventofcode.com/{}/day/{}", YEAR, day)
 }
 
-pub fn cache_input_for_day(day: i32, session: &Session) -> Result<File, std::io::Error> {
+pub fn cache_input_for_day(day: i32, session: &Session) -> Result<File, SessionError> {
     let file_path = input_cache_path(day);
     let file = fs::OpenOptions::new()
         .read(true)
@@ -97,11 +97,12 @@ pub fn cache_input_for_day(day: i32, session: &Session) -> Result<File, std::io:
         .create(false)
         .open(&file_path);
     let url = input_url(day);
-    if let Err(_e) = file {
-        println!("Downloading inputs for this day.");
-        session.download_file(&url, &file_path)
-    } else {
-        file
+    match file {
+        Ok(content) => Ok(content), // necessary to convert Result types
+        Err(_) => {
+            println!("Downloading inputs for day {}.", day);
+            session.download_file(&url, &file_path)
+        }
     }
 }
 
@@ -154,6 +155,30 @@ fn node_to_markdown<W: Write>(parent: Node, buf: &mut W) -> Result<(), std::io::
     Ok(())
 }
 
+pub enum SessionError {
+    TokenFormat,
+    IoError,
+    NetworkError,
+}
+
+impl std::convert::From<reqwest::header::InvalidHeaderValue> for SessionError {
+    fn from(_: reqwest::header::InvalidHeaderValue) -> Self {
+        SessionError::TokenFormat
+    }
+}
+
+impl std::convert::From<std::io::Error> for SessionError {
+    fn from(_: std::io::Error) -> Self {
+        SessionError::IoError
+    }
+}
+
+impl std::convert::From<reqwest::Error> for SessionError {
+    fn from(_: reqwest::Error) -> Self {
+        SessionError::NetworkError
+    }
+}
+
 /// Wrap all input & instructions requests
 #[derive(Debug)]
 pub struct Session {
@@ -162,12 +187,12 @@ pub struct Session {
 }
 
 impl Session {
-    pub fn new(token: &str) -> Session {
-        let headers = Session::header(&token);
+    pub fn new(token: &str) -> Result<Session, SessionError> {
+        let headers = Session::header(&token)?;
         let client = reqwest::Client::new();
-        Session { headers, client }
+        Ok(Session { headers, client })
     }
-    pub fn from_file(filename: &str) -> Result<Session, std::io::Error> {
+    pub fn from_file(filename: &str) -> Result<Session, SessionError> {
         let session_file = fs::OpenOptions::new()
             .read(true)
             .write(false)
@@ -179,40 +204,31 @@ impl Session {
         session_reader
             .read_line(&mut token)?;
         token = token.trim_end().to_string();
-        Ok(Session::new(&token))
+        Ok(Session::new(&token)?)
     }
-    fn get(&self, url: &str) -> reqwest::Response {
-        let request = self.client.get(&*url).headers(self.headers.clone()).send();
-        let request = match request {
-            Ok(c) => c,
-            Err(e) => panic!("err:{}", e),
-        };
-        request
-    }
-    fn header(token: &str) -> HeaderMap {
+    fn header(token: &str) -> Result<HeaderMap, SessionError> {
         let mut session_raw = "session=".to_string();
         session_raw.push_str(&token);
         let mut headers = HeaderMap::new();
         let name = HeaderName::from_lowercase(b"cookie").expect("a would-be-const-function failed?");
-        let value = match HeaderValue::from_str(&session_raw) {
-            Ok(c) => c,
-            Err(e) => panic!("error with your session token, {}", e),
-        };
+        let value = HeaderValue::from_str(&session_raw)?;
         headers.insert(name, value);
-        headers
+        Ok(headers)
     }
-    pub fn download_file(&self, url: &str, filename: &str) -> Result<File, std::io::Error> {
+    pub fn download_file(&self, url: &str, filename: &str) -> Result<File, SessionError> {
         let mut file = fs::OpenOptions::new()
             .read(true)
             .write(true)
             .create(true)
             .open(filename)?;
-        self.download(url, &mut file);
+        self.download(url, &mut file)?;
         Ok(file)
     }
-    pub fn download<W: Write>(&self, url: &str, buffer: &mut W) {
-        let mut request = self.get(&url);
-        request.copy_to(buffer).unwrap();
+    pub fn download<W: Write>(&self, url: &str, buffer: &mut W) -> Result<(), SessionError>{
+        let response = self.client.get(&*url).headers(self.headers.clone()).send();
+        let mut content = response?;
+        content.copy_to(buffer).unwrap();
         buffer.flush().unwrap();
+        Ok(())
     }
 }
