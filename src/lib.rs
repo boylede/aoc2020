@@ -107,7 +107,7 @@ pub fn cache_input_for_day(day: i32, session: &Session) -> Result<File, SessionE
     }
 }
 
-pub fn cache_instructions_for_day(day: i32, session: &Session) -> Result<(), std::io::Error> {
+pub fn cache_instructions_for_day(day: i32, session: &Session) -> Result<(), SessionError> {
     let file_path = instruction_cache_path(day);
     let file = fs::OpenOptions::new()
         .read(true)
@@ -124,7 +124,7 @@ pub fn cache_instructions_for_day(day: i32, session: &Session) -> Result<(), std
         if let Ok(mut file) = file {
             let mut buf = Cursor::new(Vec::with_capacity(20480)); // 20kb buffer
             let url = instruction_cache_url(day);
-            session.download(&url, &mut buf);
+            session.download(&url, &mut buf)?;
             buf.seek(SeekFrom::Start(0)).expect("Shouldn't fail");
             let doc = Document::from_read(buf).unwrap();
             for main in doc.find(Name("body").descendant(Name("main"))) {
@@ -136,7 +136,7 @@ pub fn cache_instructions_for_day(day: i32, session: &Session) -> Result<(), std
     Ok(())
 }
 
-fn node_to_markdown<W: Write>(parent: Node, buf: &mut W) -> Result<(), std::io::Error> {
+fn node_to_markdown<W: Write>(parent: Node, buf: &mut W) -> Result<(), SessionError> {
     for node in parent.children() {
         if let Some(name) = node.name() {
             match name {
