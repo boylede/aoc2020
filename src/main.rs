@@ -10,22 +10,22 @@ use std::io::{BufRead, BufReader, Cursor, Seek, SeekFrom, Write};
 #[clap(version = "0.1.0", author = "Daniel Boyle")]
 #[derive(Debug, Clone, Clap)]
 pub struct Config {
-    /// which day to run
+    /// Which day to run.
     #[clap(short = 'd', long = "day", default_value = "1")]
     pub day: i32,
-    /// run all days, ignores -day if set
+    /// Run all days, ignores --day if set.
     #[clap(short = 'a', long = "all")]
     pub all: bool,
-    /// dry-run the program offline
+    /// Dry-run the program offline.
     #[clap(short = 'o', long = "offline")]
     pub offline: bool,
-    /// provide session token on the command line or in a session.txt file
+    /// Provide session token on the command line or in a session.txt file.
     #[clap(short = 's', long = "session")]
     pub session: Option<String>,
-    /// provide alternate input for testing
+    /// Provide alternate input for testing.
     #[clap(short = 'i', long = "input")]
     pub input: Option<String>,
-    /// cache result for regression testing
+    /// Cache result for regression testing.
     #[clap(long = "accept")]
     pub accept: bool,
 }
