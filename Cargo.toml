@@ -5,7 +5,7 @@ authors = ["Daniel Boyle <boylede+github@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-lapp = "0.3.0"
+clap = { git = "https://github.com/clap-rs/clap/" }
 reqwest = "0.9.1"
 time = "0.1.40"
 select = "0.4.2"

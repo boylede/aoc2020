@@ -1,64 +1,32 @@
 use aoc2020::Day;
 use aoc2020::Session;
 
-use std::process;
+use clap::Clap;
 
-const USAGE: &'static str = "Dan Boyle's Advent of Code 2020 entries.
-\t-d, --day (default 1) which day's code to run.
-\t-a, --all run all day modules currently present.
-\t-i, --input (string) optional input file.
-\t-s, --session (string) optional session string.
-\t-o, --offline stay offline, do a dry run";
-
-#[derive(Debug, Clone)]
+/// Advent of Code 2020 entries
+#[clap(version = "0.1.0", author = "Daniel Boyle")]
+#[derive(Debug, Clone, Clap)]
 pub struct Config {
+    /// which day to run
+    #[clap(short = 'd', long = "day", default_value = "1")]
     pub day: i32,
+    /// run all days, ignores -day if set
+    #[clap(short = 'a', long = "all")]
     pub all: bool,
+    /// dry-run the program offline
+    #[clap(short = 'o', long = "offline")]
     pub offline: bool,
-    pub session: String,
-    pub input: String,
-}
-
-impl Config {
-    pub fn new(args: lapp::Args) -> Result<Config, &'static str> {
-        let all = args.get_bool("all");
-        let offline = args.get_bool("offline");
-        let day = args.get_integer("day");
-
-        let session = match args.flag_present("session") {
-            true => args.get_string("session"),
-            false => "".to_string(),
-        };
-
-        let input = match args.flag_present("input") {
-            true => args.get_string("input"),
-            false => "".to_string(),
-        };
-
-        Ok(Config {
-            all,
-            offline,
-            day,
-            session,
-            input,
-        })
-    }
+    /// provide a session token on the command line or in a session.txt file
+    #[clap(short = 's', long = "session")]
+    pub session: Option<String>,
+    /// provide alternate input for testing
+    #[clap(short = 'i', long = "input")]
+    pub input: Option<String>,
 }
 
 fn main() {
     /* 	Parse Arguments */
-    let mut args = lapp::Args::new(USAGE);
-    match args.parse_result() {
-        Ok(()) => (),
-        Err(error) => {
-            println!("Error parsing arguments: {}, try --help.", error);
-            return;
-        }
-    }
-    let config = Config::new(args).unwrap_or_else(|err| {
-        println!("{}", err);
-        process::exit(0);
-    });
+    let config = Config::parse();
 
     /* 	Main Logic */
     let days = aoc2020::DAYS;
@@ -70,7 +38,7 @@ fn main() {
         let index = (config.day - 1) as usize;
         if index < days.len() {
             let day = &days[index];
-            assert!(index == day.index as usize);
+            assert!(index + 1 == day.index as usize);
             run_day(day, &config);
         } else {
             println!("Invalid day selection: {}", config.day);
@@ -80,9 +48,9 @@ fn main() {
 
 fn run_day(day: &Day, config: &Config) {
     println!("Running day: {}", &day);
-    if !config.offline {
-        let session = if config.session.len() > 0 {
-            Session::new(&config.session)
+    if !config.offline && config.input == None {
+        let session = if let Some(session) = &config.session {
+            Session::new(&session)
         } else {
             Session::from_file("session.txt")
         };
@@ -92,7 +60,11 @@ fn run_day(day: &Day, config: &Config) {
                 "Please create a session.txt file or provide --session on the command line."
             ),
         }
-    } else {
+    } else if config.input == None {
         day.run_with_cached_input();
+    } else {
+        let input_filename = config.input.as_ref().expect("unreachable");
+            day.run_with_test_input(&input_filename);
     }
 }
+
