@@ -98,7 +98,6 @@ pub fn cache_input_for_day(day: i32, session: &Session) -> Result<File, std::io:
         .open(&file_path);
     let url = input_url(day);
     if let Err(_e) = file {
-        // panic!("didn't want to do online stuff dummy");
         println!("Downloading inputs for this day.");
         session.download_file(&url, &file_path)
     } else {
@@ -115,7 +114,6 @@ pub fn cache_instructions_for_day(day: i32, session: &Session) -> Result<(), std
         .open(&file_path);
 
     if let Err(_e) = file {
-        // panic!("didn't want to do online stuff dummy");
         let file = fs::OpenOptions::new()
             .read(true)
             .write(true)
