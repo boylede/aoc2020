@@ -6,7 +6,9 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "reqwest",
+ "ron",
  "select",
+ "serde",
  "time",
 ]
 
@@ -32,6 +34,12 @@ name = "autocfg"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
+
+[[package]]
+name = "base64"
+version = "0.12.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3441f0f7b02788e948e47f457ca01f1d7e6d92c693bc132c22b087d3141c03ff"
 
 [[package]]
 name = "base64"
@@ -1028,7 +1036,7 @@ version = "0.10.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fb15d6255c792356a0f578d8a645c677904dc02e862bebe2ecc18e0c01b9a0ce"
 dependencies = [
- "base64",
+ "base64 0.13.0",
  "bytes",
  "encoding_rs",
  "futures-core",
@@ -1056,6 +1064,17 @@ dependencies = [
  "wasm-bindgen-test",
  "web-sys",
  "winreg",
+]
+
+[[package]]
+name = "ron"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8a58080b7bb83b2ea28c3b7a9a994fd5e310330b7c8ca5258d99b98128ecfe4"
+dependencies = [
+ "base64 0.12.3",
+ "bitflags",
+ "serde",
 ]
 
 [[package]]
@@ -1118,6 +1137,9 @@ name = "serde"
 version = "1.0.117"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b88fa983de7720629c9387e9f517353ed404164b1e482c970a90c1a4aaf7dc1a"
+dependencies = [
+ "serde_derive",
+]
 
 [[package]]
 name = "serde_derive"

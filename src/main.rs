@@ -1,5 +1,10 @@
-use aoc2020::{Day, PartResult, RunError, RunResult, Session, SessionError};
+use aoc2020::{Day, PartResult, RunError, RunResult, Session, SessionError, cache_result_for_day};
 use clap::Clap;
+
+use std::fmt;
+use std::fs;
+use std::fs::File;
+use std::io::{BufRead, BufReader, Cursor, Seek, SeekFrom, Write};
 
 /// Advent of Code 2020 entries
 #[clap(version = "0.1.0", author = "Daniel Boyle")]
@@ -56,7 +61,7 @@ fn run_day(day: &Day, config: &Config) {
             match output {
                 Ok(result) => {
                     if config.accept {
-                        cache_result(result);
+                        cache_result_for_day(day.index, result);
                     }
                 }
                 Err(e) => print_error(e),
@@ -69,7 +74,7 @@ fn run_day(day: &Day, config: &Config) {
         match output {
             Ok(result) => {
                 if config.accept {
-                    cache_result(result);
+                    cache_result_for_day(day.index, result);
                 }
             }
             Err(e) => print_error(e),
@@ -98,6 +103,3 @@ fn print_error(err: RunError) {
     }
 }
 
-fn cache_result(result: (String, String)) {
-    unimplemented!()
-}

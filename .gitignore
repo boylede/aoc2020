@@ -2,5 +2,6 @@
 **/*.rs.bk
 /input/*
 /instructions/*
+/results/*
 session.txt
 out.txt

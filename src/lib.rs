@@ -12,6 +12,8 @@ use select::document::Document;
 use select::node::Node;
 use select::predicate::{Name, Predicate};
 
+use serde::{Serialize, Deserialize};
+
 const YEAR: i32 = 2020;
 const AOC_URL: &str = "https://adventofcode.com/";
 
@@ -157,6 +159,31 @@ pub fn instruction_cache_path(day: i32) -> String {
 }
 pub fn instruction_cache_url(day: i32) -> String {
     format!("{}{}/day/{}", AOC_URL, YEAR, day)
+}
+
+pub fn result_cache_path(day: i32) -> String {
+    format!("results/day{:02}.txt", day)
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Results {
+    part1: String,
+    part2: String,
+}
+
+pub fn cache_result_for_day(day: i32, result: (String, String)) -> Result<(), RunError> {
+    println!("caching results");
+    let file_path = result_cache_path(day);
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&file_path).map_err(|_| RunError::CacheError)?;
+    let results = Results {
+        part1: result.0,
+        part2: result.1,
+    };
+    ron::ser::to_writer(&mut file, &results).map_err(|_| RunError::CacheError)?;
+    Ok(())
 }
 
 pub fn cache_input_for_day(day: i32, session: &Session) -> Result<File, SessionError> {
