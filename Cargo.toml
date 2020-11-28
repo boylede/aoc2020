@@ -1,0 +1,12 @@
+[package]
+name = "aoc2020"
+version = "0.1.0"
+authors = ["Daniel Boyle <boylede+github@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+lapp = "0.3.0"
+reqwest = "0.9.1"
+time = "0.1.40"
+select = "0.4.2"
+ordered-float = "1.0.2"
