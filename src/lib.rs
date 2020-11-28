@@ -3,7 +3,10 @@ use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Cursor, Seek, SeekFrom, Write};
 
-use reqwest::{Client, header::{HeaderMap, HeaderName, HeaderValue}};
+use reqwest::{
+    header::{HeaderMap, HeaderName, HeaderValue},
+    Client,
+};
 
 use select::document::Document;
 use select::node::Node;
@@ -14,9 +17,10 @@ const AOC_URL: &str = "https://adventofcode.com/";
 
 pub mod day1;
 
-pub const DAYS: &[Day] = &[
-    Day {index: 1, runner: day1::run},
-];
+pub const DAYS: &[Day] = &[Day {
+    index: 1,
+    runner: day1::run,
+}];
 
 /// Wrap the day's runner function so we can store all loaded days in a vec
 #[derive(Debug, Clone)]
@@ -58,7 +62,7 @@ impl Day {
             .write(false)
             .create(false)
             .open(input_filename);
-        if let Ok(input ) = file {
+        if let Ok(input) = file {
             (self.runner)(input);
         } else {
             println!("couldn't open test input file {}", input_filename);
@@ -199,11 +203,10 @@ impl Session {
             .write(false)
             .create(false)
             .open(filename)?;
-    
+
         let mut session_reader = BufReader::new(session_file);
         let mut token = String::new();
-        session_reader
-            .read_line(&mut token)?;
+        session_reader.read_line(&mut token)?;
         token = token.trim_end().to_string();
         Ok(Session::new(&token)?)
     }
@@ -211,7 +214,8 @@ impl Session {
         let mut session_raw = "session=".to_string();
         session_raw.push_str(&token);
         let mut headers = HeaderMap::new();
-        let name = HeaderName::from_lowercase(b"cookie").expect("a would-be-const-function failed?");
+        let name =
+            HeaderName::from_lowercase(b"cookie").expect("a would-be-const-function failed?");
         let value = HeaderValue::from_str(&session_raw)?;
         headers.insert(name, value);
         Ok(headers)
@@ -225,7 +229,7 @@ impl Session {
         self.download(url, &mut file)?;
         Ok(file)
     }
-    pub fn download<W: Write>(&self, url: &str, buffer: &mut W) -> Result<(), SessionError>{
+    pub fn download<W: Write>(&self, url: &str, buffer: &mut W) -> Result<(), SessionError> {
         let response = self.client.get(&*url).headers(self.headers.clone()).send();
         let mut content = response?;
         content.copy_to(buffer).unwrap();

@@ -88,10 +88,11 @@ fn run_day(day: &Day, config: &Config) {
         };
         match session {
             Ok(session) => day.cache_input_and_run(&session),
-            Err(_) => println!("Please create a session.txt file or provide --session on the command line."),
+            Err(_) => println!(
+                "Please create a session.txt file or provide --session on the command line."
+            ),
         }
     } else {
         day.run_with_cached_input();
     }
-    
 }
