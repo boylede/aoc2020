@@ -25,10 +25,7 @@ pub struct Config {
 }
 
 fn main() {
-    /* 	Parse Arguments */
     let config = Config::parse();
-
-    /* 	Main Logic */
     let days = aoc2020::DAYS;
     if config.all {
         for day in days {
@@ -38,7 +35,6 @@ fn main() {
         let index = (config.day - 1) as usize;
         if index < days.len() {
             let day = &days[index];
-            assert!(index + 1 == day.index as usize);
             run_day(day, &config);
         } else {
             println!("Invalid day selection: {}", config.day);
@@ -67,4 +63,3 @@ fn run_day(day: &Day, config: &Config) {
             day.run_with_test_input(&input_filename);
     }
 }
-
