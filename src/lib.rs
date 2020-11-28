@@ -3,7 +3,7 @@ use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Cursor, Seek, SeekFrom, Write};
 
-use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+use reqwest::{Client, header::{HeaderMap, HeaderName, HeaderValue}};
 
 use select::document::Document;
 use select::node::Node;
@@ -11,39 +11,14 @@ use select::predicate::{Name, Predicate};
 
 const YEAR: i32 = 2020;
 
-#[derive(Debug)]
-pub struct Config {
-    pub day: i32,
-    pub all: bool,
-    pub session: String,
-    pub input: String,
-}
+pub mod day1;
 
-impl Config {
-    pub fn new(args: lapp::Args) -> Result<Config, &'static str> {
-        let all = args.get_bool("all");
-        let day = args.get_integer("day");
+pub const DAYS: &[Day] = &[
+    Day {index: 1, runner: day1::run},
+];
 
-        let session = match args.flag_present("session") {
-            true => args.get_string("session"),
-            false => "session not set in command line, TODO: get from file".to_string(),
-        };
-
-        let input = match args.flag_present("input") {
-            true => args.get_string("input"),
-            false => "".to_string(),
-        };
-
-        Ok(Config {
-            all,
-            day,
-            session,
-            input,
-        })
-    }
-}
-
-#[derive(Debug)]
+/// Wrap the day's runner function so we can store all loaded days in a vec
+#[derive(Debug, Clone)]
 pub struct Day {
     runner: fn(File),
     pub index: i32,
@@ -56,6 +31,38 @@ impl Day {
     pub fn run(self: &Self, input: File) {
         (self.runner)(input);
     }
+    pub fn cache_input_and_run(&self, session: &Session) {
+        let file = cache_files(self.index, &session);
+        if let Ok(input) = file {
+            (self.runner)(input);
+        } else {
+            println!("Couldn't get input file for day {}, quitting.", self.index);
+        }
+    }
+    pub fn run_with_cached_input(&self) {
+        let file_path = input_cache_path(self.index);
+        let file = fs::OpenOptions::new()
+            .read(true)
+            .write(false)
+            .create(false)
+            .open(&file_path);
+        match file {
+            Ok(input) => self.run(input),
+            Err(_) => println!("No cached input available"),
+        }
+    }
+    pub fn run_with_test_input(&self, input_filename: &str) {
+        let file = fs::OpenOptions::new()
+            .read(true)
+            .write(false)
+            .create(false)
+            .open(input_filename);
+        if let Ok(input ) = file {
+            (self.runner)(input);
+        } else {
+            println!("couldn't open test input file {}", input_filename);
+        }
+    }
 }
 
 impl fmt::Display for Day {
@@ -64,44 +71,43 @@ impl fmt::Display for Day {
     }
 }
 
-pub fn get_input_file(day: i32, optional_input: &String) -> Result<File, std::io::Error> {
-    let input_filename = match optional_input.len() {
-        0 => {
-            // println!("Using default input");
-            get_instructions_for_day(day)?;
-            get_input_for_day(day)
-        }
-        _ => {
-            println!("Using user-provided input, {}", optional_input);
-            optional_input.clone()
-        }
-    };
-    fs::OpenOptions::new()
-        .read(true)
-        .write(false)
-        .create(false)
-        .open(input_filename)
+pub fn cache_files(day: i32, session: &Session) -> Result<File, std::io::Error> {
+    cache_instructions_for_day(day, &session)?;
+    cache_input_for_day(day, &session)
 }
 
-pub fn get_input_for_day(day: i32) -> String {
-    let file_path = format!("input/day{}.txt", day);
+pub fn input_cache_path(day: i32) -> String {
+    format!("input/day{}.txt", day)
+}
+pub fn input_url(day: i32) -> String {
+    format!("https://adventofcode.com/{}/day/{}/input", YEAR, day)
+}
+pub fn instruction_cache_path(day: i32) -> String {
+    format!("instructions/day{}.md", day)
+}
+pub fn instruction_cache_url(day: i32) -> String {
+    format!("https://adventofcode.com/{}/day/{}", YEAR, day)
+}
+
+pub fn cache_input_for_day(day: i32, session: &Session) -> Result<File, std::io::Error> {
+    let file_path = input_cache_path(day);
     let file = fs::OpenOptions::new()
         .read(true)
         .write(false)
         .create(false)
         .open(&file_path);
-    let url = format!("https://adventofcode.com/{}/day/{}/input", YEAR, day);
+    let url = input_url(day);
     if let Err(_e) = file {
+        // panic!("didn't want to do online stuff dummy");
         println!("Downloading inputs for this day.");
-        download_to_file(url, &file_path);
+        session.download_file(&url, &file_path)
     } else {
-        // println!("Found cached input file");
+        file
     }
-    file_path
 }
 
-pub fn get_instructions_for_day(day: i32) -> Result<(), std::io::Error> {
-    let file_path = format!("instructions/day{}.md", day);
+pub fn cache_instructions_for_day(day: i32, session: &Session) -> Result<(), std::io::Error> {
+    let file_path = instruction_cache_path(day);
     let file = fs::OpenOptions::new()
         .read(true)
         .write(false)
@@ -109,14 +115,18 @@ pub fn get_instructions_for_day(day: i32) -> Result<(), std::io::Error> {
         .open(&file_path);
 
     if let Err(_e) = file {
+        // panic!("didn't want to do online stuff dummy");
         let file = fs::OpenOptions::new()
             .read(true)
             .write(true)
             .create(true)
             .open(&file_path);
         if let Ok(mut file) = file {
-            let doc = get_html_document(format!("https://adventofcode.com/{}/day/{}", YEAR, day));
-            // let mut buf = Cursor::new(Vec::with_capacity(20480));
+            let mut buf = Cursor::new(Vec::with_capacity(20480)); // 20kb buffer
+            let url = instruction_cache_url(day);
+            session.download(&url, &mut buf);
+            buf.seek(SeekFrom::Start(0)).expect("Shouldn't fail");
+            let doc = Document::from_read(buf).unwrap();
             for main in doc.find(Name("body").descendant(Name("main"))) {
                 node_to_markdown(main, &mut file)?;
             }
@@ -146,73 +156,64 @@ fn node_to_markdown<W: Write>(parent: Node, buf: &mut W) -> Result<(), std::io::
     Ok(())
 }
 
-fn get_html_document(url: String) -> Document {
-    let mut buf = Cursor::new(Vec::with_capacity(20480)); // 20kb buffer
-    download_to_buffer(url, &mut buf);
-    buf.seek(SeekFrom::Start(0)).expect("Shouldn't fail");
-    Document::from_read(buf).unwrap()
+#[derive(Debug)]
+pub struct Session {
+    headers: HeaderMap,
+    client: Client,
 }
 
-fn make_session_header() -> HeaderMap {
-    let session_file = match fs::OpenOptions::new()
-        .read(true)
-        .write(false)
-        .create(false)
-        .open("session.txt")
-    {
-        Ok(file) => file,
-        Err(_) => panic!("Please create a session.txt file"),
-    };
-
-    let mut session_reader = BufReader::new(session_file);
-    let mut session_raw = String::new();
-    let len = session_reader
-        .read_line(&mut session_raw)
-        .expect("session file couldn't be processed");
-    session_raw = session_raw.trim_end().to_string();
-    let mut headers = HeaderMap::new();
-    if len > 0 {
-        let name =
-            HeaderName::from_lowercase(b"cookie").expect(" a would-be-const-function failed?");
-        let value = match HeaderValue::from_str(session_raw.trim_end()) {
+impl Session {
+    pub fn new(token: &str) -> Session {
+        let headers = Session::header(&token);
+        let client = reqwest::Client::new();
+        Session { headers, client }
+    }
+    pub fn from_file(filename: &str) -> Result<Session, std::io::Error> {
+        let session_file = fs::OpenOptions::new()
+            .read(true)
+            .write(false)
+            .create(false)
+            .open(filename)?;
+    
+        let mut session_reader = BufReader::new(session_file);
+        let mut token = String::new();
+        session_reader
+            .read_line(&mut token)?;
+        token = token.trim_end().to_string();
+        Ok(Session::new(&token))
+    }
+    fn get(&self, url: &str) -> reqwest::Response {
+        let request = self.client.get(&*url).headers(self.headers.clone()).send();
+        let request = match request {
             Ok(c) => c,
-            Err(e) => panic!("Error with your session.txt file, {}", e),
+            Err(e) => panic!("err:{}", e),
+        };
+        request
+    }
+    fn header(token: &str) -> HeaderMap {
+        let mut session_raw = "session=".to_string();
+        session_raw.push_str(&token);
+        let mut headers = HeaderMap::new();
+        let name = HeaderName::from_lowercase(b"cookie").expect("a would-be-const-function failed?");
+        let value = match HeaderValue::from_str(&session_raw) {
+            Ok(c) => c,
+            Err(e) => panic!("error with your session token, {}", e),
         };
         headers.insert(name, value);
+        headers
     }
-
-    headers
-}
-
-fn get_url(url: String) -> reqwest::Response {
-    let headers = make_session_header();
-    let request = reqwest::Client::new().get(&url).headers(headers).send();
-
-    let res = match request {
-        Ok(c) => c,
-        Err(e) => panic!("err:{}", e),
-    };
-    res
-}
-
-fn download_to_file(url: String, filename: &String) {
-    let mut file = match fs::OpenOptions::new()
-        .read(true)
-        .write(true)
-        .create(true)
-        .open(filename)
-    {
-        Ok(c) => c,
-        Err(e) => panic!(
-            "Error while opening file \"{}\" for writing: {}",
-            filename, e
-        ),
-    };
-    download_to_buffer(url, &mut file);
-}
-
-fn download_to_buffer<W: Write>(url: String, buffer: &mut W) {
-    let mut request = get_url(url);
-    request.copy_to(buffer).unwrap();
-    buffer.flush().unwrap();
+    pub fn download_file(&self, url: &str, filename: &str) -> Result<File, std::io::Error> {
+        let mut file = fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open(filename)?;
+        self.download(url, &mut file);
+        Ok(file)
+    }
+    pub fn download<W: Write>(&self, url: &str, buffer: &mut W) {
+        let mut request = self.get(&url);
+        request.copy_to(buffer).unwrap();
+        buffer.flush().unwrap();
+    }
 }

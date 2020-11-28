@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 
-use aoc2020::Day;
+use crate::Day;
 
 const DAY: i32 = 1;
 
