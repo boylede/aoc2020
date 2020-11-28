@@ -10,6 +10,7 @@ use select::node::Node;
 use select::predicate::{Name, Predicate};
 
 const YEAR: i32 = 2020;
+const AOC_URL: &str = "https://adventofcode.com/";
 
 pub mod day1;
 
@@ -80,13 +81,13 @@ pub fn input_cache_path(day: i32) -> String {
     format!("input/day{}.txt", day)
 }
 pub fn input_url(day: i32) -> String {
-    format!("https://adventofcode.com/{}/day/{}/input", YEAR, day)
+    format!("{}{}/day/{}/input", AOC_URL, YEAR, day)
 }
 pub fn instruction_cache_path(day: i32) -> String {
     format!("instructions/day{}.md", day)
 }
 pub fn instruction_cache_url(day: i32) -> String {
-    format!("https://adventofcode.com/{}/day/{}", YEAR, day)
+    format!("{}{}/day/{}", AOC_URL, YEAR, day)
 }
 
 pub fn cache_input_for_day(day: i32, session: &Session) -> Result<File, SessionError> {
