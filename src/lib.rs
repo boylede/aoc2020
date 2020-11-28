@@ -5,7 +5,7 @@ use std::io::{BufRead, BufReader, Cursor, Seek, SeekFrom, Write};
 
 use reqwest::{
     header::{HeaderMap, HeaderName, HeaderValue},
-    Client,
+    blocking::Client,
 };
 
 use select::document::Document;
@@ -194,7 +194,7 @@ pub struct Session {
 impl Session {
     pub fn new(token: &str) -> Result<Session, SessionError> {
         let headers = Session::header(&token)?;
-        let client = reqwest::Client::new();
+        let client = reqwest::blocking::Client::new();
         Ok(Session { headers, client })
     }
     pub fn from_file(filename: &str) -> Result<Session, SessionError> {

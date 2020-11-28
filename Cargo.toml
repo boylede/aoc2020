@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 clap = { git = "https://github.com/clap-rs/clap/" }
-reqwest = "0.9.1"
+reqwest = { version = "0.10", features = ["blocking"] }
 time = "0.1.40"
 select = "0.4.2"
 ordered-float = "1.0.2"
