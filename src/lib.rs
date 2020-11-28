@@ -154,6 +154,7 @@ fn node_to_markdown<W: Write>(parent: Node, buf: &mut W) -> Result<(), std::io::
     Ok(())
 }
 
+/// Wrap all input & instructions requests
 #[derive(Debug)]
 pub struct Session {
     headers: HeaderMap,

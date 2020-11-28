@@ -70,6 +70,7 @@ fn main() {
         let index = (config.day - 1) as usize;
         if index < days.len() {
             let day = &days[index];
+            assert!(index == day.index as usize);
             run_day(day, &config);
         } else {
             println!("Invalid day selection: {}", config.day);
@@ -81,14 +82,14 @@ fn run_day(day: &Day, config: &Config) {
     println!("Running day: {}", &day);
     if !config.offline {
         let session = if config.session.len() > 0 {
-            Session::new(&config.session)
+            Ok(Session::new(&config.session))
         } else {
-            match Session::from_file("session.txt") {
-                Ok(session) => session,
-                Err(_) => panic!("Please create a session.txt file or provide --session on the command line."),
-            }
+            Session::from_file("session.txt")
         };
-        day.cache_input_and_run(&session);
+        match session {
+            Ok(session) => day.cache_input_and_run(&session),
+            Err(_) => println!("Please create a session.txt file or provide --session on the command line."),
+        }
     } else {
         day.run_with_cached_input();
     }
