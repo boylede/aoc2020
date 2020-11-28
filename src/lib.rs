@@ -38,10 +38,23 @@ impl Day {
     }
     pub fn cache_input_and_run(&self, session: &Session) {
         let file = cache_files(self.index, &session);
-        if let Ok(input) = file {
-            (self.runner)(input);
-        } else {
-            println!("Couldn't get input file for day {}, quitting.", self.index);
+        match file {
+            Ok(input) => self.run(input),
+            Err(SessionError::TokenFormat) => {
+                println!("Session token was unreadable.");
+            }
+            Err(SessionError::IoError(desc)) => {
+                println!("{}", desc);
+            }
+            Err(SessionError::NetworkError) => {
+                println!("Network request failed");
+            }
+            Err(SessionError::BufferError) => {
+                println!("An error occured while writing memory.");
+            }
+            Err(SessionError::DomError) => {
+                println!("Unable to parse DOM");
+            }
         }
     }
     pub fn run_with_cached_input(&self) {
@@ -129,18 +142,20 @@ pub fn cache_instructions_for_day(day: i32, session: &Session) -> Result<(), Ses
             let mut buf = Cursor::new(Vec::with_capacity(20480)); // 20kb buffer
             let url = instruction_cache_url(day);
             session.download(&url, &mut buf)?;
-            buf.seek(SeekFrom::Start(0)).expect("Shouldn't fail");
-            let doc = Document::from_read(buf).unwrap();
+            buf.seek(SeekFrom::Start(0)).expect("infallible");
+            let doc = Document::from_read(buf).map_err(|_| SessionError::DomError)?;
             for main in doc.find(Name("body").descendant(Name("main"))) {
-                node_to_markdown(main, &mut file)?;
+                node_to_markdown(main, &mut file).map_err(|_| SessionError::DomError)?;
             }
-            file.flush()?
+            file.flush().map_err(|_| {
+                SessionError::IoError(format!("Unable to close file: {}", file_path))
+            })?;
         }
     }
     Ok(())
 }
 
-fn node_to_markdown<W: Write>(parent: Node, buf: &mut W) -> Result<(), SessionError> {
+fn node_to_markdown<W: Write>(parent: Node, buf: &mut W) -> Result<(), std::io::Error> {
     for node in parent.children() {
         if let Some(name) = node.name() {
             match name {
@@ -162,19 +177,15 @@ fn node_to_markdown<W: Write>(parent: Node, buf: &mut W) -> Result<(), SessionEr
 
 pub enum SessionError {
     TokenFormat,
-    IoError,
+    IoError(String),
     NetworkError,
+    BufferError,
+    DomError,
 }
 
 impl std::convert::From<reqwest::header::InvalidHeaderValue> for SessionError {
     fn from(_: reqwest::header::InvalidHeaderValue) -> Self {
         SessionError::TokenFormat
-    }
-}
-
-impl std::convert::From<std::io::Error> for SessionError {
-    fn from(_: std::io::Error) -> Self {
-        SessionError::IoError
     }
 }
 
@@ -202,11 +213,19 @@ impl Session {
             .read(true)
             .write(false)
             .create(false)
-            .open(filename)?;
+            .open(filename)
+            .map_err(|_| {
+                SessionError::IoError(format!(
+                    "unable to load session token from file {}",
+                    filename
+                ))
+            })?;
 
         let mut session_reader = BufReader::new(session_file);
         let mut token = String::new();
-        session_reader.read_line(&mut token)?;
+        session_reader
+            .read_line(&mut token)
+            .map_err(|_| SessionError::IoError(format!("unable to read from file {}", filename)))?;
         token = token.trim_end().to_string();
         Ok(Session::new(&token)?)
     }
@@ -214,8 +233,7 @@ impl Session {
         let mut session_raw = "session=".to_string();
         session_raw.push_str(&token);
         let mut headers = HeaderMap::new();
-        let name =
-            HeaderName::from_lowercase(b"cookie").expect("a would-be-const-function failed?");
+        let name = HeaderName::from_lowercase(b"cookie").expect("infallible");
         let value = HeaderValue::from_str(&session_raw)?;
         headers.insert(name, value);
         Ok(headers)
@@ -225,15 +243,20 @@ impl Session {
             .read(true)
             .write(true)
             .create(true)
-            .open(filename)?;
+            .open(filename)
+            .map_err(|_| {
+                SessionError::IoError(format!("unable to open cache file file {}", filename))
+            })?;
         self.download(url, &mut file)?;
         Ok(file)
     }
     pub fn download<W: Write>(&self, url: &str, buffer: &mut W) -> Result<(), SessionError> {
         let response = self.client.get(&*url).headers(self.headers.clone()).send();
         let mut content = response?;
-        content.copy_to(buffer).unwrap();
-        buffer.flush().unwrap();
+        content
+            .copy_to(buffer)
+            .map_err(|_| SessionError::BufferError)?;
+        buffer.flush().map_err(|_| SessionError::BufferError)?;
         Ok(())
     }
 }
