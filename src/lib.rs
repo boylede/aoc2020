@@ -12,7 +12,7 @@ use select::document::Document;
 use select::node::Node;
 use select::predicate::{Name, Predicate};
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 const YEAR: i32 = 2020;
 const AOC_URL: &str = "https://adventofcode.com/";
@@ -45,7 +45,8 @@ pub const DAYS: &[Day] = &[
 
 pub enum RunError {
     SessionFailed(SessionError),
-    CacheError,
+    CacheInError,
+    CacheOutError,
     InputError,
     DayError(String),
 }
@@ -102,18 +103,27 @@ impl Day {
         let c_time = time::precise_time_ns();
         println!("Day {} Part 1 took: {}ns", self.index, b_time - a_time);
         println!("Day {} Part 2 took: {}ns", self.index, c_time - b_time);
-        
+
         use RunError::DayError;
         match (part1, part2) {
             (Ok(result1), Ok(result2)) => Ok((result1, result2)),
-            (Err(err1), Ok(result2)) => Err(DayError(format!("part 1 error: {:?}, part 2 success: {}", err1, result2))),
-            (Ok(result1), Err(err2)) => Err(DayError(format!("part 1 success: {}, part 2 error: {:?}", result1, err2))),
-            (Err(err1), Err(err2)) => Err(DayError(format!("part 1 error: {:?}, part 2 error: {:?}", err1, err2))),
+            (Err(err1), Ok(result2)) => Err(DayError(format!(
+                "part 1 error: {:?}, part 2 success: {}",
+                err1, result2
+            ))),
+            (Ok(result1), Err(err2)) => Err(DayError(format!(
+                "part 1 success: {}, part 2 error: {:?}",
+                result1, err2
+            ))),
+            (Err(err1), Err(err2)) => Err(DayError(format!(
+                "part 1 error: {:?}, part 2 error: {:?}",
+                err1, err2
+            ))),
         }
     }
     pub fn cache_input_and_run(&self, session: &Session) -> RunResult {
-        let input = cache_files(self.index, &session)
-            .map_err(|err| RunError::SessionFailed(err))?;
+        let input =
+            cache_files(self.index, &session).map_err(|err| RunError::SessionFailed(err))?;
         self.run(input)
     }
     pub fn run_with_cached_input(&self) -> RunResult {
@@ -123,7 +133,7 @@ impl Day {
             .write(false)
             .create(false)
             .open(&file_path)
-            .map_err(|_| RunError::CacheError)?;
+            .map_err(|_| RunError::CacheInError)?;
         self.run(input)
     }
     pub fn run_with_test_input(&self, input_filename: &str) -> RunResult {
@@ -140,12 +150,13 @@ impl Day {
         let mut file = fs::OpenOptions::new()
             .write(true)
             .create_new(true)
-            .open(&file_path).map_err(|_| RunError::CacheError)?;
+            .open(&file_path)
+            .map_err(|_| RunError::CacheOutError)?;
         let results = Results {
             part1: result.0,
             part2: result.1,
         };
-        ron::ser::to_writer(&mut file, &results).map_err(|_| RunError::CacheError)?;
+        ron::ser::to_writer(&mut file, &results).map_err(|_| RunError::CacheOutError)?;
         println!("Cached results.");
         Ok(())
     }
@@ -154,8 +165,10 @@ impl Day {
         let mut file = fs::OpenOptions::new()
             .read(true)
             .create(false)
-            .open(&file_path).map_err(|_| RunError::CacheError)?;
-        let results : Results = ron::de::from_reader(&mut file).map_err(|_| RunError::CacheError)?;
+            .open(&file_path)
+            .map_err(|_| RunError::CacheOutError)?;
+        let results: Results =
+            ron::de::from_reader(&mut file).map_err(|_| RunError::CacheOutError)?;
         if results.part1 == result.0 && results.part2 == result.1 {
             println!("Results Validated!");
         } else {

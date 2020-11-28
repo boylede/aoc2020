@@ -1,10 +1,5 @@
-use aoc2020::{Day, PartResult, RunError, RunResult, Session, SessionError};
+use aoc2020::{Day, RunError, Session, SessionError};
 use clap::Clap;
-
-use std::fmt;
-use std::fs;
-use std::fs::File;
-use std::io::{BufRead, BufReader, Cursor, Seek, SeekFrom, Write};
 
 /// Advent of Code 2020 entries
 #[clap(version = "0.1.0", author = "Daniel Boyle")]
@@ -63,10 +58,15 @@ fn run_day(day: &Day, config: &Config) {
             let output = day.cache_input_and_run(&session);
             match output {
                 Ok(result) => {
-                    if config.validate {
-                        day.validate_result(result);
+                    let next_output = if config.validate {
+                        day.validate_result(result)
                     } else if config.accept {
-                        day.cache_result(result);
+                        day.cache_result(result)
+                    } else {
+                        Ok(())
+                    };
+                    if let Err(e) = next_output {
+                        print_error(e);
                     }
                 }
                 Err(e) => print_error(e),
@@ -78,10 +78,15 @@ fn run_day(day: &Day, config: &Config) {
         let output = day.run_with_cached_input();
         match output {
             Ok(result) => {
-                if config.validate {
-                    day.validate_result(result);
+                let next_output = if config.validate {
+                    day.validate_result(result)
                 } else if config.accept {
-                    day.cache_result(result);
+                    day.cache_result(result)
+                } else {
+                    Ok(())
+                };
+                if let Err(e) = next_output {
+                    print_error(e);
                 }
             }
             Err(e) => print_error(e),
@@ -104,9 +109,9 @@ fn print_error(err: RunError) {
         SessionFailed(NetworkError) => println!("Network request failed."),
         SessionFailed(BufferError) => println!("An error occured while writing memory."),
         SessionFailed(DomError) => println!("Unable to parse DOM."),
-        CacheError => println!("No cached input available."),
+        CacheInError => println!("No cached input available."),
+        CacheOutError => println!("No cached result available."),
         InputError => println!("Couldn't open test input file."),
         DayError(reason) => println!("Errors with this Day: {}", reason),
     }
 }
-
