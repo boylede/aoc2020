@@ -1,4 +1,4 @@
-use aoc2020::{Day, PartResult, RunError, RunResult, Session, SessionError, cache_result_for_day};
+use aoc2020::{Day, PartResult, RunError, RunResult, Session, SessionError};
 use clap::Clap;
 
 use std::fmt;
@@ -28,6 +28,9 @@ pub struct Config {
     /// Cache result for regression testing.
     #[clap(long = "accept")]
     pub accept: bool,
+    /// Validate result against cache. Overides --accept.
+    #[clap(long = "validate")]
+    pub validate: bool,
 }
 
 fn main() {
@@ -60,8 +63,10 @@ fn run_day(day: &Day, config: &Config) {
             let output = day.cache_input_and_run(&session);
             match output {
                 Ok(result) => {
-                    if config.accept {
-                        cache_result_for_day(day.index, result);
+                    if config.validate {
+                        day.validate_result(result);
+                    } else if config.accept {
+                        day.cache_result(result);
                     }
                 }
                 Err(e) => print_error(e),
@@ -73,8 +78,10 @@ fn run_day(day: &Day, config: &Config) {
         let output = day.run_with_cached_input();
         match output {
             Ok(result) => {
-                if config.accept {
-                    cache_result_for_day(day.index, result);
+                if config.validate {
+                    day.validate_result(result);
+                } else if config.accept {
+                    day.cache_result(result);
                 }
             }
             Err(e) => print_error(e),

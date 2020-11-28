@@ -112,8 +112,8 @@ impl Day {
         }
     }
     pub fn cache_input_and_run(&self, session: &Session) -> RunResult {
-        let input =
-            cache_files(self.index, &session).map_err(|err| RunError::SessionFailed(err))?;
+        let input = cache_files(self.index, &session)
+            .map_err(|err| RunError::SessionFailed(err))?;
         self.run(input)
     }
     pub fn run_with_cached_input(&self) -> RunResult {
@@ -134,6 +134,34 @@ impl Day {
             .open(input_filename)
             .map_err(|_| RunError::InputError)?;
         self.run(input)
+    }
+    pub fn cache_result(&self, result: (String, String)) -> Result<(), RunError> {
+        let file_path = result_cache_path(self.index);
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&file_path).map_err(|_| RunError::CacheError)?;
+        let results = Results {
+            part1: result.0,
+            part2: result.1,
+        };
+        ron::ser::to_writer(&mut file, &results).map_err(|_| RunError::CacheError)?;
+        println!("Cached results.");
+        Ok(())
+    }
+    pub fn validate_result(&self, result: (String, String)) -> Result<(), RunError> {
+        let file_path = result_cache_path(self.index);
+        let mut file = fs::OpenOptions::new()
+            .read(true)
+            .create(false)
+            .open(&file_path).map_err(|_| RunError::CacheError)?;
+        let results : Results = ron::de::from_reader(&mut file).map_err(|_| RunError::CacheError)?;
+        if results.part1 == result.0 && results.part2 == result.1 {
+            println!("Results Validated!");
+        } else {
+            println!("Results do NOT match cache.")
+        }
+        Ok(())
     }
 }
 
@@ -169,21 +197,6 @@ pub fn result_cache_path(day: i32) -> String {
 pub struct Results {
     part1: String,
     part2: String,
-}
-
-pub fn cache_result_for_day(day: i32, result: (String, String)) -> Result<(), RunError> {
-    println!("caching results");
-    let file_path = result_cache_path(day);
-    let mut file = fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(&file_path).map_err(|_| RunError::CacheError)?;
-    let results = Results {
-        part1: result.0,
-        part2: result.1,
-    };
-    ron::ser::to_writer(&mut file, &results).map_err(|_| RunError::CacheError)?;
-    Ok(())
 }
 
 pub fn cache_input_for_day(day: i32, session: &Session) -> Result<File, SessionError> {
