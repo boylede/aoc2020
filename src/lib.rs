@@ -16,25 +16,67 @@ const YEAR: i32 = 2020;
 const AOC_URL: &str = "https://adventofcode.com/";
 
 pub mod day1;
+pub mod day2;
+pub mod day3;
+pub mod day4;
+pub mod day5;
+pub mod day6;
 
-pub const DAYS: &[Day] = &[Day {
-    index: 1,
-    runner: day1::run,
-}];
+macro_rules! day_element {
+    ($module:ident, $number:expr) => {
+        Day {
+            index: $number,
+            part1: $module::part1,
+            part2: $module::part2,
+        }
+    };
+}
+
+pub const DAYS: &[Day] = &[
+    day_element!(day1, 1),
+    day_element!(day2, 2),
+    day_element!(day3, 3),
+    day_element!(day4, 4),
+    day_element!(day5, 5),
+    day_element!(day6, 6),
+];
+
+type PartFunction = fn(&Vec<String>) -> String;
 
 /// Wrap the day's runner function so we can store all loaded days in a vec
-#[derive(Debug, Clone)]
 pub struct Day {
-    runner: fn(File),
+    part1: PartFunction,
+    part2: PartFunction,
     pub index: i32,
 }
 
 impl Day {
-    pub fn new(index: i32, runner: fn(File)) -> Self {
-        Day { runner, index }
-    }
     pub fn run(self: &Self, input: File) {
-        (self.runner)(input);
+        println!("loading day {} input.", self.index);
+        let a_time = time::precise_time_ns();
+        let mut lines = vec![];
+        {
+            let mut lines_iterator = BufReader::new(&input).lines();
+            while let Some(Ok(line)) = lines_iterator.next() {
+                lines.push(line);
+            }
+        }
+        let b_time = time::precise_time_ns();
+        let total_time = b_time - a_time;
+        if total_time > 100000 {
+            println!("Loading took: {}ms", total_time as f32 / 1000000.0);
+        } else {
+            println!("Loading took: {}ns", total_time);
+        }
+        let a_time = time::precise_time_ns();
+        let part1 = (self.part1)(&lines);
+        println!("Part 1 result: {}", part1);
+        let b_time = time::precise_time_ns();
+        let part2 = (self.part2)(&lines);
+        println!("Part 2 result: {}", part2);
+        let c_time = time::precise_time_ns();
+        println!("Day {} Part 1 took: {}ns", self.index, b_time - a_time);
+        println!("Day {} Part 2 took: {}ns", self.index, c_time - b_time);
     }
     pub fn cache_input_and_run(&self, session: &Session) {
         let file = cache_files(self.index, &session);
