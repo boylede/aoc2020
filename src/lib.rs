@@ -73,7 +73,7 @@ pub struct Day {
 
 impl Day {
     pub fn run(self: &Self, input: File) -> RunResult {
-        println!("loading day {} input.", self.index);
+        println!("Loading day {} input.", self.index);
         let a_time = time::precise_time_ns();
         let mut lines = vec![];
         {
@@ -102,8 +102,21 @@ impl Day {
             part2.as_ref().map(|s| s.as_str()).unwrap_or("failed!")
         );
         let c_time = time::precise_time_ns();
-        println!("Day {} Part 1 took: {}ns", self.index, b_time - a_time);
-        println!("Day {} Part 2 took: {}ns", self.index, c_time - b_time);
+        let p1_time = b_time - a_time;
+        let ns_in_ms = 1_000_000;
+        print!("Day {} Part 1 took: ", self.index);
+        if p1_time > ns_in_ms {
+            println!("{} ms", p1_time / ns_in_ms);
+        } else {
+            println!("{} ns", p1_time);
+        }
+        let p2_time = c_time - b_time;
+        print!("Day {} Part 2 took: ", self.index);
+        if p2_time > ns_in_ms {
+            println!("{} ms", p2_time / ns_in_ms);
+        } else {
+            println!("{} ns", p2_time);
+        }
 
         use RunError::DayError;
         match (part1, part2) {
