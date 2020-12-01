@@ -1,4 +1,4 @@
-use crate::{PartError, PartResult};
+use crate::PartResult;
 
 pub fn part1(lines: &Vec<String>) -> PartResult {
     let expenses: Vec<i32> = lines
@@ -31,8 +31,12 @@ pub fn part2(lines: &Vec<String>) -> PartResult {
     let result = expenses
         .iter()
         .flat_map(|&a| std::iter::repeat(a).zip(expenses.iter()))
-        .flat_map(|(a, &b)| std::iter::repeat(a).zip(std::iter::repeat(b)).zip(expenses.iter()))
-        .map(|((a, b,), c)| (a + b + c, a, b, c))
+        .flat_map(|(a, &b)| {
+            std::iter::repeat(a)
+                .zip(std::iter::repeat(b))
+                .zip(expenses.iter())
+        })
+        .map(|((a, b), &c)| (a + b + c, a, b, c))
         .filter(|(n, _, _, _)| *n == 2020)
         // .inspect(|t| println!("results: {:?}", t))
         .map(|(_, a, b, c)| a * b * c)
