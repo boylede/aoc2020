@@ -72,15 +72,7 @@ pub struct Day {
 }
 
 impl Day {
-    pub fn run(self: &Self, input: File) -> RunResult {
-        println!("Loading day {} input.", self.index);
-        let mut lines = vec![];
-        {
-            let mut lines_iterator = BufReader::new(&input).lines();
-            while let Some(Ok(line)) = lines_iterator.next() {
-                lines.push(line);
-            }
-        }
+    pub fn run(self: &Self, lines: Vec<String>) -> RunResult {
         let a_time = time::precise_time_ns();
         let part1 = (self.part1)(&lines);
         println!(
@@ -140,27 +132,29 @@ impl Day {
         };
     }
     pub fn cache_input_and_run(&self, session: &Session) -> RunResult {
-        let input =
+        let lines =
             cache_files(self.index, &session).map_err(|err| RunError::SessionFailed(err))?;
-        self.run(input)
+        self.run(lines)
     }
     pub fn run_with_cached_input(&self) -> RunResult {
         let file_path = input_cache_path(self.index);
-        let input = fs::OpenOptions::new()
+        let file = fs::OpenOptions::new()
             .read(true)
             .write(false)
             .create(false)
             .open(&file_path)
             .map_err(|_| RunError::CacheInError)?;
+        let input = pre_parse_input(file);
         self.run(input)
     }
     pub fn run_with_test_input(&self, input_filename: &str) -> RunResult {
-        let input = fs::OpenOptions::new()
+        let file = fs::OpenOptions::new()
             .read(true)
             .write(false)
             .create(false)
             .open(input_filename)
             .map_err(|_| RunError::InputError)?;
+        let input = pre_parse_input(file);
         self.run(input)
     }
     pub fn cache_result(&self, result: (String, String)) -> Result<(), RunError> {
@@ -199,19 +193,29 @@ impl fmt::Display for Day {
     }
 }
 
-pub fn cache_files(day: i32, session: &Session) -> Result<File, SessionError> {
+pub fn pre_parse_input(file: File) -> Vec<String> {
+    let mut lines = vec![];
+    let mut lines_iterator = BufReader::new(&file).lines();
+    while let Some(Ok(line)) = lines_iterator.next() {
+        lines.push(line);
+    }
+    println!("Loaded {} lines.", lines.len());
+    lines
+}
+
+pub fn cache_files(day: i32, session: &Session) -> Result<Vec<String>, SessionError> {
     cache_instructions_for_day(day, &session)?;
     cache_input_for_day(day, &session)
 }
 
 pub fn input_cache_path(day: i32) -> String {
-    format!("input/day{}.txt", day)
+    format!("input/day{:02}.txt", day)
 }
 pub fn input_url(day: i32) -> String {
     format!("{}{}/day/{}/input", AOC_URL, YEAR, day)
 }
 pub fn instruction_cache_path(day: i32) -> String {
-    format!("instructions/day{}.md", day)
+    format!("instructions/day{:02}.md", day)
 }
 pub fn instruction_cache_url(day: i32) -> String {
     format!("{}{}/day/{}", AOC_URL, YEAR, day)
@@ -223,7 +227,7 @@ pub fn result_cache_path(day: i32) -> String {
 #[derive(Serialize, Deserialize)]
 pub struct Results(String, String);
 
-pub fn cache_input_for_day(day: i32, session: &Session) -> Result<File, SessionError> {
+pub fn cache_input_for_day(day: i32, session: &Session) -> Result<Vec<String>, SessionError> {
     let file_path = input_cache_path(day);
     let file = fs::OpenOptions::new()
         .read(true)
@@ -231,13 +235,15 @@ pub fn cache_input_for_day(day: i32, session: &Session) -> Result<File, SessionE
         .create(false)
         .open(&file_path);
     let url = input_url(day);
-    match file {
-        Ok(content) => Ok(content), // necessary to convert Result types
+    let lines = match file {
+        Ok(content) => pre_parse_input(content), // necessary to convert Result types
         Err(_) => {
             println!("Downloading inputs for day {}.", day);
-            session.download_file(&url, &file_path)
+            let new_file = session.download_file(&url, &file_path)?;
+            pre_parse_input(new_file)
         }
-    }
+    };
+    Ok(lines)
 }
 
 pub fn cache_instructions_for_day(day: i32, session: &Session) -> Result<(), SessionError> {
