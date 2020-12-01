@@ -278,14 +278,32 @@ fn node_to_markdown<W: Write>(parent: Node, buf: &mut W) -> Result<(), std::io::
         if let Some(name) = node.name() {
             match name {
                 "article" => node_to_markdown(node, buf)?,
-                "h2" => write!(buf, "## {}\n", node.text())?,
-                "p" => write!(buf, "{}\n\n", node.text())?,
-                "pre" => write!(buf, "\t{}\n", node.text())?,
+                "h2" => {
+                    let mut text = node.text();
+                    text = text.trim_end_matches("---").trim_start_matches("---").trim_end().trim_start().to_string();
+                    write!(buf, "## {}\n", text)?
+                },
+                "p" => {
+                    let text = node.text();
+                    if !text.starts_with("You can also [Shareon") {
+                        write!(buf, "{}\n", node.text())?
+                    } else {
+                        println!("-------------\n{}", text);
+                    }
+                },
+                "pre" => {
+                    write!(buf, "~~~")?;
+                    for line in node.text().split('\n') {
+                        write!(buf, "\n{}", line)?;
+                    }
+                    write!(buf, "~~~\n")?;
+                },
                 "ul" => {
                     write!(buf, "\n")?;
                     node_to_markdown(node, buf)?
                 }
                 "li" => write!(buf, "  * {}\n", node.text())?,
+                "script" => (),
                 _ => write!(buf, "\n<{}>\n", node.text())?,
             }
         }
