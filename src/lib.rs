@@ -1,3 +1,5 @@
+/// All code related to loading and running each day
+
 use std::fmt;
 use std::fs;
 use std::fs::File;

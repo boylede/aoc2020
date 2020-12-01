@@ -1,3 +1,9 @@
+// The purpose of dividing the code into main.rs and lib.rs is to divide responsibility
+// between the command-line executable and any other application logic. All command-line
+// related logic is in main.rs, including parsing the command line and deciding what to
+// do based on arguments. All common logic for running AOC 2020 day modules is in lib.rs.
+// Each day has its own module "day#.rs" which solves that particular puzzle.
+
 use aoc2020::{Day, RunError, Session, SessionError};
 use clap::Clap;
 
@@ -48,7 +54,7 @@ fn main() {
 
 fn run_day(day: &Day, config: &Config) {
     println!("Running day: {}", &day);
-    if !config.offline && config.input == None {
+    if !config.offline && config.input.is_none() {
         let session = if let Some(session) = &config.session {
             Session::new(&session)
         } else {
@@ -74,7 +80,7 @@ fn run_day(day: &Day, config: &Config) {
         } else {
             println!("Please create a session.txt file or provide --session on the command line.");
         }
-    } else if config.input == None {
+    } else if config.input.is_none() {
         let output = day.run_with_cached_input();
         match output {
             Ok(result) => {
