@@ -74,20 +74,12 @@ pub struct Day {
 impl Day {
     pub fn run(self: &Self, input: File) -> RunResult {
         println!("Loading day {} input.", self.index);
-        let a_time = time::precise_time_ns();
         let mut lines = vec![];
         {
             let mut lines_iterator = BufReader::new(&input).lines();
             while let Some(Ok(line)) = lines_iterator.next() {
                 lines.push(line);
             }
-        }
-        let b_time = time::precise_time_ns();
-        let total_time = b_time - a_time;
-        if total_time > 100000 {
-            println!("Loading took: {}ms", total_time as f32 / 1000000.0);
-        } else {
-            println!("Loading took: {}ns", total_time);
         }
         let a_time = time::precise_time_ns();
         let part1 = (self.part1)(&lines);
@@ -303,14 +295,14 @@ fn node_to_markdown<W: Write>(parent: Node, buf: &mut W) -> Result<(), std::io::
                     } else {
                         println!("-------------\n{}", text);
                     }
-                },
+                }
                 "pre" => {
                     write!(buf, "~~~")?;
                     for line in node.text().split('\n') {
                         write!(buf, "\n{}", line)?;
                     }
                     write!(buf, "~~~\n")?;
-                },
+                }
                 "ul" => {
                     write!(buf, "\n")?;
                     node_to_markdown(node, buf)?
