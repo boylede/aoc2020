@@ -1,5 +1,4 @@
 /// All code related to loading and running each day
-
 use std::fmt;
 use std::fs;
 use std::fs::File;
@@ -122,6 +121,18 @@ impl Day {
                 err1, err2
             ))),
         }
+    }
+    pub fn clear_cache(&self) {
+        let file_path = input_cache_path(self.index);
+        match fs::remove_file(file_path) {
+            Ok(_) => (),
+            Err(e) => (),
+        };
+        let ins_file_path = instruction_cache_path(self.index);
+        match fs::remove_file(ins_file_path) {
+            Ok(_) => (),
+            Err(e) => (),
+        };
     }
     pub fn cache_input_and_run(&self, session: &Session) -> RunResult {
         let input =

@@ -32,6 +32,9 @@ pub struct Config {
     /// Validate result against cache. Overides --accept.
     #[clap(long = "validate")]
     pub validate: bool,
+    /// Clear all cache. Usefull when the input is all gateway timeouts.
+    #[clap(long = "clear-cache")]
+    pub clear: bool,
 }
 
 fn main() {
@@ -54,6 +57,10 @@ fn main() {
 
 fn run_day(day: &Day, config: &Config) {
     println!("Running day: {}", &day);
+    if config.clear {
+        println!("Clearing cache...");
+        day.clear_cache();
+    }
     if !config.offline && config.input.is_none() {
         let session = if let Some(session) = &config.session {
             Session::new(&session)
