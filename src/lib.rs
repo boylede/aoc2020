@@ -258,7 +258,6 @@ pub fn cache_instructions_for_day(day: i32, session: &Session) -> Result<(), Ses
             let mut buf = Cursor::new(Vec::with_capacity(20480)); // 20kb buffer
             let url = instruction_cache_url(day);
             session.download(&url, &mut buf)?;
-            buf.seek(SeekFrom::Start(0)).expect("infallible");
             let doc = Document::from_read(buf).map_err(|_| SessionError::DomError)?;
             for main in doc.find(Name("body").descendant(Name("main"))) {
                 node_to_markdown(main, &mut file).map_err(|_| SessionError::DomError)?;
@@ -387,12 +386,13 @@ impl Session {
         self.download(url, &mut file)?;
         Ok(file)
     }
-    pub fn download<W: Write>(&self, url: &str, buffer: &mut W) -> Result<(), SessionError> {
+    pub fn download<W: Write + Seek>(&self, url: &str, buffer: &mut W) -> Result<(), SessionError> {
         let response = self.client.get(&*url).headers(self.headers.clone()).send();
         let mut content = response?;
         content
             .copy_to(buffer)
             .map_err(|_| SessionError::BufferError)?;
+        buffer.seek(SeekFrom::Start(0)).expect("infallible");
         buffer.flush().map_err(|_| SessionError::BufferError)?;
         Ok(())
     }
