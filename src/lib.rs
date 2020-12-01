@@ -131,12 +131,12 @@ impl Day {
         let file_path = input_cache_path(self.index);
         match fs::remove_file(file_path) {
             Ok(_) => (),
-            Err(e) => (),
+            Err(e) => println!("error deleting file: {}", e),
         };
         let ins_file_path = instruction_cache_path(self.index);
         match fs::remove_file(ins_file_path) {
             Ok(_) => (),
-            Err(e) => (),
+            Err(e) => println!("error deleting file: {}", e),
         };
     }
     pub fn cache_input_and_run(&self, session: &Session) -> RunResult {
@@ -285,9 +285,14 @@ fn node_to_markdown<W: Write>(parent: Node, buf: &mut W) -> Result<(), std::io::
                 "article" => node_to_markdown(node, buf)?,
                 "h2" => {
                     let mut text = node.text();
-                    text = text.trim_end_matches("---").trim_start_matches("---").trim_end().trim_start().to_string();
+                    text = text
+                        .trim_end_matches("---")
+                        .trim_start_matches("---")
+                        .trim_end()
+                        .trim_start()
+                        .to_string();
                     write!(buf, "## {}\n", text)?
-                },
+                }
                 "p" => {
                     let text = node.text();
                     if !text.starts_with("You can also [Shareon") {
