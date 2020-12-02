@@ -3,14 +3,11 @@ use crate::PartResult;
 pub fn part1(lines: &Vec<String>) -> PartResult {
     let expenses: Vec<i32> = lines
         .iter()
-        .map(|line| {
-            let num = line.parse::<i32>().unwrap();
-            num
-        })
+        .map(|line| line.parse::<i32>().unwrap())
         .collect();
     let result = expenses
         .iter()
-        .flat_map(|&a| std::iter::repeat(a).zip(expenses.iter()))
+        .flat_map(|a| std::iter::repeat(a).zip(expenses.iter()))
         .map(|(a, b)| (a + b, a, b))
         .filter(|(n, _, _)| *n == 2020)
         // .inspect(|t| println!("results: {:?}", t))
