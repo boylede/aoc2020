@@ -226,7 +226,6 @@ pub fn result_cache_path(day: i32) -> String {
 
 #[derive(Serialize, Deserialize)]
 pub struct Results(String, String);
-
 pub fn cache_input_for_day(day: i32, session: &Session) -> Result<Vec<String>, SessionError> {
     let file_path = input_cache_path(day);
     let file = fs::OpenOptions::new()
@@ -234,10 +233,18 @@ pub fn cache_input_for_day(day: i32, session: &Session) -> Result<Vec<String>, S
         .write(false)
         .create(false)
         .open(&file_path);
-    let url = input_url(day);
+    let len = (&file)
+        .as_ref()
+        .map(|content| content.metadata().map(|m| m.len()).ok())
+        .ok()
+        .flatten();
     let lines = match file {
-        Ok(content) => pre_parse_input(content), // necessary to convert Result types
-        Err(_) => {
+        Ok(content) if Some(210) != len => {
+            // necessary to convert Result types
+            pre_parse_input(content)
+        }
+        Ok(_) | Err(_) => {
+            let url = input_url(day);
             println!("Downloading inputs for day {}.", day);
             let new_file = session.download_file(&url, &file_path)?;
             pre_parse_input(new_file)
@@ -253,7 +260,6 @@ pub fn cache_instructions_for_day(day: i32, session: &Session) -> Result<(), Ses
         .write(false)
         .create(false)
         .open(&file_path);
-
     if let Err(_e) = file {
         let file = fs::OpenOptions::new()
             .read(true)
