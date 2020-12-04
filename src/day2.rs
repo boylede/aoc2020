@@ -6,7 +6,6 @@ pub fn part1(lines: &Vec<String>) -> PartResult {
         .iter()
         .map(|line| line.parse::<Password>().unwrap())
         .collect();
-
     let number = passwords
         .iter()
         .filter(|password| password.is_valid_sled())
@@ -19,7 +18,6 @@ pub fn part2(lines: &Vec<String>) -> PartResult {
         .iter()
         .map(|line| line.parse::<Password>().unwrap())
         .collect();
-
     let number = passwords
         .iter()
         .filter(|password| password.is_valid_tobaggan())

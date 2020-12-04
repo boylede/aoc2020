@@ -33,7 +33,7 @@ fn parse_input(lines: &Vec<String>) -> HashMap<Coord, Tile> {
         .iter()
         .enumerate()
         .flat_map(|(y, line)| {
-            let tiles: HashMap<Coord, Tile> = line
+            let tiles: Vec<(Coord, Tile)> = line
                 .chars()
                 .enumerate()
                 .map(|(x, c)| {

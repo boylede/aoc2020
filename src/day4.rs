@@ -74,14 +74,17 @@ impl Mode for Strict {
     }
 }
 
+fn is_between(value: &str, min: u32, max: u32) -> bool {
+    let number: Result<u32, _> = value.parse();
+    match number {
+        Ok(num) => num >= min && num <= max,
+        Err(_) => false,
+    }
+}
+
 fn valid_birth_year(value: &str) -> bool {
     if value.chars().count() == 4 {
-        let year: u32 = value.parse().unwrap();
-        if year < 1920 || year > 2002 {
-            false
-        } else {
-            true
-        }
+        is_between(value, 1920, 2002)
     } else {
         false
     }
@@ -89,12 +92,7 @@ fn valid_birth_year(value: &str) -> bool {
 
 fn valid_issue_year(value: &str) -> bool {
     if value.chars().count() == 4 {
-        let year: u32 = value.parse().unwrap();
-        if year < 2010 || year > 2020 {
-            false
-        } else {
-            true
-        }
+        is_between(value, 2010, 2020)
     } else {
         false
     }
@@ -102,38 +100,18 @@ fn valid_issue_year(value: &str) -> bool {
 
 fn valid_expiration_year(value: &str) -> bool {
     if value.chars().count() == 4 {
-        let year: u32 = value.parse().unwrap();
-        if year < 2020 || year > 2030 {
-            false
-        } else {
-            true
-        }
+        is_between(value, 2020, 2030)
     } else {
         false
     }
 }
 
 fn valid_height(value: &str) -> bool {
+    let len = value.len();
     if value.ends_with("cm") {
-        let mut height: String = value.clone().to_string();
-        height.pop();
-        height.pop();
-        let height: u32 = height.parse().unwrap();
-        if height > 193 || height < 150 {
-            false
-        } else {
-            true
-        }
+        is_between(&value[0..len-2], 150, 193)
     } else if value.ends_with("in") {
-        let mut height: String = value.clone().to_string();
-        height.pop();
-        height.pop();
-        let height: u32 = height.parse().unwrap();
-        if height > 76 || height < 59 {
-            false
-        } else {
-            true
-        }
+        is_between(&value[0..len-2], 59, 76)
     } else {
         false
     }
@@ -148,11 +126,12 @@ fn valid_eye_color(value: &str) -> bool {
 }
 
 fn valid_hair_color(value: &str) -> bool {
+    let length = value.len();
     let mut color = value.chars();
     if color.next() == Some('#') {
-        if color.clone().any(|c| !VALID_HEX_DIGITS.contains(c)) {
+        if color.any(|c| !VALID_HEX_DIGITS.contains(c)) {
             false
-        } else if color.count() != 6 {
+        } else if length != 7 { // 6 required digits plus #
             false
         } else {
             true
@@ -163,7 +142,7 @@ fn valid_hair_color(value: &str) -> bool {
 }
 
 fn valid_pid(value: &str) -> bool {
-    if value.chars().count() != 9 {
+    if value.len() != 9 {
         false
     } else if value.parse::<u32>().is_err() {
         false
@@ -198,7 +177,6 @@ impl<'a, M: Mode> FromIterator<&'a String> for Passports<M> {
             }
         }
         if current.keys().count() > 0 {
-            println!("failed!");
             let passport = M::create_passport(current.clone());
             inner.push(passport);
             current.clear();
@@ -214,9 +192,9 @@ impl<M> Passports<M> {
     fn count_valid(&self) -> usize {
         self.inner
             .iter()
-            .filter_map(|p| match p {
-                Passport::Valid(v) => Some(v),
-                _ => None,
+            .filter(|p| match p {
+                Passport::Valid(_) => true,
+                _ => false,
             })
             .count()
     }
