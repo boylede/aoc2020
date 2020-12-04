@@ -19,8 +19,14 @@ enum Passport {
     Invalid(HashMap<String, String>),
 }
 
-// CID ommitted
+// cid ommitted
 const REQUIRED_KEYS: &[&str] = &["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"];
+const VALID_HEX_DIGITS: &str = "0123456789abcdef";
+const VALID_EYE_COLORS: &[&str] = &["amb", "blu", "brn", "gry", "grn", "hzl", "oth"];
+
+trait Mode {
+    fn create_passport(map: HashMap<String, String>) -> Passport;
+}
 
 struct Careless;
 impl Mode for Careless {
@@ -42,115 +48,133 @@ impl Mode for Strict {
         let valid = REQUIRED_KEYS
             .iter()
             .all(|key| map.contains_key(key.to_owned()));
-        use Passport::*;
-        let passport = match valid {
-            true => Valid(map),
-            false => Invalid(map),
-        };
-        match passport {
-            Passport::Valid(m) => {
-                let mut items: Vec<(&String, &String)> = m.iter().collect();
-                items.sort();
-                for (key, value) in items.iter() {
-                    match key.as_str() {
-                        "byr" => {
-                            if value.chars().count() == 4 {
-                                let year: u32 = value.parse().unwrap();
-                                if year < 1920 || year > 2002 {
-                                    return Passport::Invalid(m);
-                                }
-                            } else {
-                                return Passport::Invalid(m);
-                            }
-                        }
-                        "iyr" => {
-                            if value.chars().count() == 4 {
-                                let year: u32 = value.parse().unwrap();
-                                if year < 2010 || year > 2020 {
-                                    return Passport::Invalid(m);
-                                }
-                            } else {
-                                return Passport::Invalid(m);
-                            }
-                        }
-                        "eyr" => {
-                            if value.chars().count() == 4 {
-                                let year: u32 = value.parse().unwrap();
-                                if year < 2020 || year > 2030 {
-                                    return Passport::Invalid(m);
-                                }
-                            } else {
-                                return Passport::Invalid(m);
-                            }
-                        }
-                        "hgt" => {
-                            if value.ends_with("cm") {
-                                let mut height: String = value.clone().to_string();
-                                height.pop();
-                                height.pop();
-                                let height: u32 = height.parse().unwrap();
-                                if height > 193 || height < 150 {
-                                    return Passport::Invalid(m);
-                                }
-                            } else if value.ends_with("in") {
-                                let mut height: String = value.clone().to_string();
-                                height.pop();
-                                height.pop();
-                                let height: u32 = height.parse().unwrap();
-                                if height > 76 || height < 59 {
-                                    return Passport::Invalid(m);
-                                }
-                            } else {
-                                return Passport::Invalid(m);
-                            }
-                        }
-                        "hcl" => {
-                            let mut color = value.chars();
-                            let valid_digits = "0123456789abcdef";
-                            if color.next() == Some('#') {
-                                if color.clone().any(|c| !valid_digits.contains(c)) {
-                                    return Passport::Invalid(m);
-                                }
-                                if color.count() != 6 {
-                                    return Passport::Invalid(m);
-                                }
-                            } else {
-                                return Passport::Invalid(m);
-                            }
-                        }
-                        "ecl" => {
-                            let valid_colors = &["amb", "blu", "brn", "gry", "grn", "hzl", "oth"];
-                            if !valid_colors.contains(&value.as_str()) {
-                                return Passport::Invalid(m);
-                            }
-                        }
-                        "pid" => {
-                            if value.chars().count() != 9 {
-                                return Passport::Invalid(m);
-                            }
-                            if value.parse::<u32>().is_err() {
-                                return Passport::Invalid(m);
-                            }
-                        }
-                        "cid" => (),
-                        _ => return Passport::Invalid(m),
-                    }
+        if valid {
+            let mut items: Vec<(&String, &String)> = map.iter().collect();
+            items.sort();
+            for (key, value) in items.iter() {
+                let strict_valid = match key.as_str() {
+                    "byr" => valid_birth_year(value),
+                    "iyr" => valid_issue_year(value),
+                    "eyr" => valid_expiration_year(value),
+                    "hgt" => valid_height(value),
+                    "ecl" => valid_eye_color(value),
+                    "hcl" => valid_hair_color(value),
+                    "pid" => valid_pid(value),
+                    "cid" => true,
+                    _ => false,
+                };
+                if !strict_valid {
+                    return Passport::Invalid(map);
                 }
-                Passport::Valid(m)
             }
-            Passport::Invalid(m) => Passport::Invalid(m),
+            return Passport::Valid(map);
+        } else {
+            return Passport::Invalid(map);
         }
     }
 }
 
-trait Mode {
-    fn create_passport(map: HashMap<String, String>) -> Passport;
+fn valid_birth_year(value: &str) -> bool {
+    if value.chars().count() == 4 {
+        let year: u32 = value.parse().unwrap();
+        if year < 1920 || year > 2002 {
+            false
+        } else {
+            true
+        }
+    } else {
+        false
+    }
+}
+
+fn valid_issue_year(value: &str) -> bool {
+    if value.chars().count() == 4 {
+        let year: u32 = value.parse().unwrap();
+        if year < 2010 || year > 2020 {
+            false
+        } else {
+            true
+        }
+    } else {
+        false
+    }
+}
+
+fn valid_expiration_year(value: &str) -> bool {
+    if value.chars().count() == 4 {
+        let year: u32 = value.parse().unwrap();
+        if year < 2020 || year > 2030 {
+            false
+        } else {
+            true
+        }
+    } else {
+        false
+    }
+}
+
+fn valid_height(value: &str) -> bool {
+    if value.ends_with("cm") {
+        let mut height: String = value.clone().to_string();
+        height.pop();
+        height.pop();
+        let height: u32 = height.parse().unwrap();
+        if height > 193 || height < 150 {
+            false
+        } else {
+            true
+        }
+    } else if value.ends_with("in") {
+        let mut height: String = value.clone().to_string();
+        height.pop();
+        height.pop();
+        let height: u32 = height.parse().unwrap();
+        if height > 76 || height < 59 {
+            false
+        } else {
+            true
+        }
+    } else {
+        false
+    }
+}
+
+fn valid_eye_color(value: &str) -> bool {
+    if !VALID_EYE_COLORS.contains(&value) {
+        false
+    } else {
+        true
+    }
+}
+
+fn valid_hair_color(value: &str) -> bool {
+    let mut color = value.chars();
+    if color.next() == Some('#') {
+        if color.clone().any(|c| !VALID_HEX_DIGITS.contains(c)) {
+            false
+        } else if color.count() != 6 {
+            false
+        } else {
+            true
+        }
+    } else {
+        false
+    }
+}
+
+fn valid_pid(value: &str) -> bool {
+    if value.chars().count() != 9 {
+        false
+    } else if value.parse::<u32>().is_err() {
+        false
+    } else {
+        true
+    }
 }
 
 #[derive(Debug)]
 struct Passports<M> {
     inner: Vec<Passport>,
-    // current: HashMap<String, String>,
     _mode: PhantomData<M>,
 }
 
@@ -160,7 +184,6 @@ impl<'a, M: Mode> FromIterator<&'a String> for Passports<M> {
         let mut current: HashMap<String, String> = HashMap::new();
         for line in iter {
             if line.is_empty() {
-                // println!("{:?}: {:?}", current.get("pid"), current.keys());
                 let passport = M::create_passport(current.clone());
                 inner.push(passport);
                 current.clear();
@@ -175,6 +198,7 @@ impl<'a, M: Mode> FromIterator<&'a String> for Passports<M> {
             }
         }
         if current.keys().count() > 0 {
+            println!("failed!");
             let passport = M::create_passport(current.clone());
             inner.push(passport);
             current.clear();
