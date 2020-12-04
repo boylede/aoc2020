@@ -194,11 +194,10 @@ impl fmt::Display for Day {
 }
 
 pub fn pre_parse_input(file: File) -> Vec<String> {
-    let mut lines = vec![];
-    let mut lines_iterator = BufReader::new(&file).lines();
-    while let Some(Ok(line)) = lines_iterator.next() {
-        lines.push(line);
-    }
+    let lines: Vec<String> = BufReader::new(&file)
+        .lines()
+        .filter_map(|l| l.ok())
+        .collect();
     println!("Loaded {} lines.", lines.len());
     lines
 }
