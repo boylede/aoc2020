@@ -5,21 +5,13 @@ pub fn part1(lines: &Vec<String>) -> PartResult {
         .iter()
         .map(|seat| {
             let mut chars = seat.chars();
-            let mut row_min = 0;
-            let mut row_max = 127;
-            for c in (&mut chars).take(7) {
-                let (min, max) = cut_range(row_min, row_max, c);
-                row_min = min;
-                row_max = max;
-            }
-            let mut col_min = 0;
-            let mut col_max = 7;
-            for c in (&mut chars).take(3) {
-                let (min, max) = cut_range(col_min, col_max, c);
-                col_min = min;
-                col_max = max;
-            }
-            (row_min, col_min)
+            let (row, _) = (&mut chars)
+                .take(7)
+                .fold((0, 127), |(min, max), c| cut_range(min, max, c));
+            let (col, _) = (&mut chars)
+                .take(3)
+                .fold((0, 7), |(min, max), c| cut_range(min, max, c));
+            (row, col)
         })
         .map(|(row, col)| row * 8 + col)
         .max()
@@ -33,21 +25,13 @@ pub fn part2(lines: &Vec<String>) -> PartResult {
         .iter()
         .map(|seat| {
             let mut chars = seat.chars();
-            let mut row_min = 0;
-            let mut row_max = 127;
-            for c in (&mut chars).take(7) {
-                let (min, max) = cut_range(row_min, row_max, c);
-                row_min = min;
-                row_max = max;
-            }
-            let mut col_min = 0;
-            let mut col_max = 7;
-            for c in (&mut chars).take(3) {
-                let (min, max) = cut_range(col_min, col_max, c);
-                col_min = min;
-                col_max = max;
-            }
-            (row_min, col_min)
+            let (row, _) = (&mut chars)
+                .take(7)
+                .fold((0, 127), |(min, max), c| cut_range(min, max, c));
+            let (col, _) = (&mut chars)
+                .take(3)
+                .fold((0, 7), |(min, max), c| cut_range(min, max, c));
+            (row, col)
         })
         .map(|(row, col)| row * 8 + col)
         .collect();
