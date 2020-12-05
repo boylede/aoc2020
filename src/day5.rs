@@ -21,16 +21,10 @@ pub fn part2(lines: &Vec<String>) -> PartResult {
         .filter_map(|seat| u32::from_str_radix(&seat, 2).ok())
         .collect();
     seats.sort();
-    let my_seat: u32 = seats[..]
-        .windows(2)
-        .filter_map(|slice| {
-            let empty_seat = slice.get(0).unwrap() + 1;
-            if *(slice.get(1).unwrap()) > empty_seat {
-                Some(empty_seat)
-            } else {
-                None
-            }
-        })
+    let my_seat: u32 = seats
+        .iter()
+        .zip(seats.iter().skip(1))
+        .filter_map(|(&a, &b)| if b > a + 1 { Some(a + 1) } else { None })
         .next()
         .unwrap();
     Ok(my_seat.to_string())
