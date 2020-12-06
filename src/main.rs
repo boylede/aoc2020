@@ -56,7 +56,6 @@ fn main() {
 }
 
 fn run_day(day: &Day, config: &Config) {
-    println!("Running day: {}", &day);
     if config.clear {
         println!("Clearing cache...");
         day.clear_cache();

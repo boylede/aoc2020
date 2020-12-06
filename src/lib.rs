@@ -73,29 +73,29 @@ pub struct Day {
 
 impl Day {
     pub fn run(self: &Self, lines: Vec<String>) -> RunResult {
+        println!("# Day {}", self.index);
+        println!("  Loaded {} lines.", lines.len());
         let a_time = time::precise_time_ns();
         let part1 = (self.part1)(&lines);
-        println!(
-            "Part 1 result: {}",
-            part1.as_ref().map(|s| s.as_str()).unwrap_or("failed!")
-        );
         let b_time = time::precise_time_ns();
         let part2 = (self.part2)(&lines);
-        println!(
-            "Part 2 result: {}",
-            part2.as_ref().map(|s| s.as_str()).unwrap_or("failed!")
-        );
         let c_time = time::precise_time_ns();
         let p1_time = b_time - a_time;
         let ns_in_ms = 1_000_000;
-        print!("Day {} Part 1 took: ", self.index);
+        print!(
+            "  Part 1 = {}, took ",
+            part1.as_ref().map(|s| s.as_str()).unwrap_or("failed!")
+        );
         if p1_time > ns_in_ms {
             println!("{} ms", p1_time / ns_in_ms);
         } else {
             println!("{} ns", p1_time);
         }
+        print!(
+            "  Part 2 = {}, took ",
+            part2.as_ref().map(|s| s.as_str()).unwrap_or("failed!")
+        );
         let p2_time = c_time - b_time;
-        print!("Day {} Part 2 took: ", self.index);
         if p2_time > ns_in_ms {
             println!("{} ms", p2_time / ns_in_ms);
         } else {
@@ -198,7 +198,6 @@ pub fn pre_parse_input(file: File) -> Vec<String> {
         .lines()
         .filter_map(|l| l.ok())
         .collect();
-    println!("Loaded {} lines.", lines.len());
     lines
 }
 
