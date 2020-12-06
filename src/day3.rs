@@ -1,51 +1,35 @@
 use crate::PartResult;
-use std::collections::HashMap;
+use std::collections::HashSet;
 
 pub fn part1(lines: &Vec<String>) -> PartResult {
-    let map = parse_input(&lines);
-    let slope = Coord(3, 1);
-    let points = count_trees(&map, slope);
+    let trees = parse_input(&lines);
+    let points = count_trees(&trees, Coord(3, 1));
     Ok(points.to_string())
 }
 
 pub fn part2(lines: &Vec<String>) -> PartResult {
-    let map = parse_input(&lines);
-    let trees = count_trees(&map, Coord(1, 1))
-        * count_trees(&map, Coord(3, 1))
-        * count_trees(&map, Coord(5, 1))
-        * count_trees(&map, Coord(7, 1))
-        * count_trees(&map, Coord(1, 2));
-
+    let trees = parse_input(&lines);
+    let trees = count_trees(&trees, Coord(1, 1))
+        * count_trees(&trees, Coord(3, 1))
+        * count_trees(&trees, Coord(5, 1))
+        * count_trees(&trees, Coord(7, 1))
+        * count_trees(&trees, Coord(1, 2));
     Ok(trees.to_string())
 }
 
-fn count_trees(map: &HashMap<Coord, Tile>, slope: Coord) -> usize {
-    slope
-        .into_iter()
-        // .inspect(|c| println!("{:?}", c))
-        .map(|c| map[&c])
-        .filter(|&t| t == Tile::Tree)
-        .count()
+fn count_trees(map: &HashSet<Coord>, slope: Coord) -> usize {
+    slope.into_iter().filter(|c| map.contains(c)).count()
 }
 
-fn parse_input(lines: &Vec<String>) -> HashMap<Coord, Tile> {
+fn parse_input(lines: &Vec<String>) -> HashSet<Coord> {
     lines
         .iter()
         .enumerate()
-        .flat_map(|(y, line)| {
-            let tiles: Vec<(Coord, Tile)> = line
-                .chars()
+        .flat_map(|(y, line)| -> Vec<Coord> {
+            line.chars()
                 .enumerate()
-                .map(|(x, c)| {
-                    let tile = match c {
-                        '#' => Tile::Tree,
-                        '.' => Tile::Clear,
-                        _ => panic!("invalid input"),
-                    };
-                    (Coord(x, y), tile)
-                })
-                .collect();
-            tiles
+                .filter_map(|(x, c)| if c == '#' { Some(Coord(x, y)) } else { None })
+                .collect()
         })
         .collect()
 }
@@ -80,10 +64,4 @@ impl Iterator for CoordIter {
             Some(c)
         }
     }
-}
-
-#[derive(Hash, Eq, PartialEq, Copy, Clone, Debug)]
-enum Tile {
-    Clear,
-    Tree,
 }
