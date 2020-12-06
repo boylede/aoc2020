@@ -1,19 +1,17 @@
 use crate::PartResult;
 
-const ONE_CHARS: &[char] = &['B', 'R'];
-
 pub fn part1(lines: &Vec<String>) -> PartResult {
     let best_seat = lines
         .iter()
         .map(|seat| {
+            let count = seat.len() - 1;
             seat.chars()
                 .enumerate()
-                .filter(|(_, c)| ONE_CHARS.contains(&c))
-                .fold(0, |a, (i, _)| a + (1 << (9 - i)))
+                .filter(|(_, c)| *c == 'B' || *c == 'R')
+                .fold(0, |a, (i, _)| a | (1 << (count - i)))
         })
         .max()
         .unwrap();
-
     Ok(best_seat.to_string())
 }
 
@@ -21,13 +19,14 @@ pub fn part2(lines: &Vec<String>) -> PartResult {
     let mut seats: Vec<u32> = lines
         .iter()
         .map(|seat| {
+            let count = seat.len() - 1;
             seat.chars()
                 .enumerate()
-                .filter(|(_, c)| ONE_CHARS.contains(&c))
-                .fold(0, |a, (i, _)| a + (1 << (9 - i)))
+                .filter(|(_, c)| *c == 'B' || *c == 'R')
+                .fold(0, |a, (i, _)| a | (1 << (count - i)))
         })
         .collect();
-    seats.sort();
+    seats.sort_unstable();
     let my_seat: u32 = seats
         .iter()
         .zip(seats.iter().skip(1))
