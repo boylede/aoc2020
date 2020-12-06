@@ -109,9 +109,9 @@ fn valid_expiration_year(value: &str) -> bool {
 fn valid_height(value: &str) -> bool {
     let len = value.len();
     if value.ends_with("cm") {
-        is_between(&value[0..len-2], 150, 193)
+        is_between(&value[0..len - 2], 150, 193)
     } else if value.ends_with("in") {
-        is_between(&value[0..len-2], 59, 76)
+        is_between(&value[0..len - 2], 59, 76)
     } else {
         false
     }
@@ -131,7 +131,8 @@ fn valid_hair_color(value: &str) -> bool {
     if color.next() == Some('#') {
         if color.any(|c| !VALID_HEX_DIGITS.contains(c)) {
             false
-        } else if length != 7 { // 6 required digits plus #
+        } else if length != 7 {
+            // 6 required digits plus #
             false
         } else {
             true
