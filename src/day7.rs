@@ -1,5 +1,6 @@
 use crate::PartResult;
 use std::collections::HashMap;
+use std::collections::HashSet;
 
 pub fn part1(lines: &Vec<String>) -> PartResult {
     let rules: HashMap<String, Vec<(usize, String)>> = lines
@@ -31,12 +32,39 @@ pub fn part1(lines: &Vec<String>) -> PartResult {
                     }
                 })
                 .collect();
-            println!("{}: {:?}\n", bag_type, children);
+            // println!("{}: {:?}\n", bag_type, children);
 
             (bag_type, children)
         })
         .collect();
-    Ok("".to_string())
+    let mut reverse: HashMap<String, Vec<String>> = HashMap::new();
+    for (big, littles) in rules.iter() {
+        for (n, little) in littles.iter() {
+            if *n > 0 {
+                reverse.entry(little.clone()).or_insert(vec![]).push(big.to_string());
+            }
+            
+        }
+    }
+    
+    let mut outer_bags: HashSet<String> = HashSet::new();
+    let mut unvisited_bags: Vec<String> = vec![];
+    unvisited_bags.push("shiny gold".to_string());
+    while unvisited_bags.len() > 0 {
+        let next_bag = unvisited_bags.pop().unwrap();
+        println!("looking for {}", next_bag);
+        if let Some(bag_type) = reverse.get(&next_bag) {
+            for bag in bag_type {
+                if !outer_bags.contains(bag) {
+                    println!("  found {}", bag);
+                    unvisited_bags.push(bag.clone());
+                    outer_bags.insert(bag.clone());
+                }
+            }
+        }
+
+    }
+    Ok(outer_bags.len().to_string())
 }
 
 pub fn part2(lines: &Vec<String>) -> PartResult {
