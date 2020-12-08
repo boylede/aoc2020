@@ -99,15 +99,11 @@ pub fn part2(lines: &Vec<String>) -> PartResult {
     unvisited_bags.push((1, "shiny gold"));
     while unvisited_bags.len() > 0 {
         let (next_count, next_bag) = unvisited_bags.pop().unwrap();
-        if next_count > 0 {
-            let children = rules.get(&next_bag).unwrap();
-            for (child_num, child_color) in children.iter() {
-                if *child_num != 0 {
-                    let meta = next_count * child_num;
-                    unvisited_bags.push((meta, child_color));
-                    bags += meta;
-                }
-            }
+        let children = rules.get(&next_bag).unwrap();
+        for (child_num, child_color) in children.iter() {
+            let meta = next_count * child_num;
+            unvisited_bags.push((meta, child_color));
+            bags += meta;
         }
     }
     Ok(bags.to_string())
