@@ -24,6 +24,7 @@ pub mod day3;
 pub mod day4;
 pub mod day5;
 pub mod day6;
+pub mod day7;
 
 macro_rules! day_element {
     ($module:ident, $number:expr) => {
@@ -42,6 +43,7 @@ pub const DAYS: &[Day] = &[
     day_element!(day4, 4),
     day_element!(day5, 5),
     day_element!(day6, 6),
+    day_element!(day7, 7),
 ];
 
 pub enum RunError {

@@ -136,11 +136,14 @@ let mut seats: Vec<u32> = lines
         .map(|seat| {
             // the seat numbers we want are just binary encoded as strings
             seat.chars()
+                // by reversing the iterator we can shift our bits into
+                // place more easily later
+                .rev()
                 .enumerate()
                 // B and R and used as 1 bits
                 .filter(|(_, c)| *c == 'B' || *c == 'R')
-                // this bit of math just moves the bits into place
-                .fold(0, |a, (i, _)| a | (1 << (9 - i)))
+                // this math moves the bit into place
+                .fold(0, |a, (i, _)| a | (1 << i))
         })
         .collect();
     // to find the missing seat it is easiest if we just sort the array
@@ -156,9 +159,60 @@ let mut seats: Vec<u32> = lines
 I had a more succinct solution for parsing the seat number but it was wasteful in both cycles and allocations so I replaced it with the version above that builds the integer by bit-manipulation.
 
 ~~~Rust
-// .. snip ..
-.map(|seat| seat.replace(ZERO_CHARS, &"0").replace(ONE_CHARS, &"1"))
-// .. snip ..
+lines
+    .iter()
+    .map(|seat| seat.replace(ZERO_CHARS, &"0").replace(ONE_CHARS, &"1").parse::<u32>().unwrap())
+    .collect();
 ~~~
 
 Finding the empty seat is easier than I initially thought, but it requires the array to be sorted. Then you can just look for gaps by comparing each value to the next one.
+
+## Day 6
+367700 ns / 1 ms
+
+I tried to actually do this one quickly. I got Part 1 in 7:26, not enough to get on the global leaderboard but certainly my quickest solve of any AOC. Then it took me 20 minutes to figure out what i was doing wrong in part 2. The parse code is very simular to day 4, more or less a copy paste job but I ommitted the unneeded complexity I had put in day 4. Part 1 just sums each HashSet's length. Part 2 requires a little different parsing since it wants to know what was on each line individually not just what is in each group of lines. Unfortunately I am looping over the groups a lot so part 2 takes a whole 1ms.
+
+
+## Day 7
+523200 ns / 378800 ns
+
+This day was a bear for me. It isn't real complicated, but it took me almost an hour to get the parsing finished for part 1. The math is really simple, you keep a list of unvisited containing bags and for every one look at bags that could contain it, and add them to the list. Each time you add one to the list you also increment a counter. This would be a potential infinite loop but AOC's input does not contain loops.
+
+~~~Rust
+let mut outer_bags: HashSet<&str> = HashSet::new();
+let mut unvisited_bags: Vec<&str> = vec![];
+unvisited_bags.push("shiny gold");
+while unvisited_bags.len() > 0 {
+    let next_bag = unvisited_bags.pop().unwrap();
+    if let Some(bag_type) = reverse_rules.get(&next_bag) {
+        for bag in bag_type {
+            if !outer_bags.contains(bag) {
+                unvisited_bags.push(bag.clone());
+                outer_bags.insert(bag.clone());
+            }
+        }
+    }
+}
+~~~
+
+Part 2 had different parsing requirements, which were simpler. Using the same visitor loop as part 1, you just need to keep track of how many bags are needed and add them instead of just incrementing the counter.
+
+~~~Rust
+let mut bags = 0;
+let mut unvisited_bags: Vec<(usize, &str)> = vec![];
+unvisited_bags.push((1, "shiny gold"));
+while unvisited_bags.len() > 0 {
+    let (next_count, next_bag) = unvisited_bags.pop().unwrap();
+    if next_count > 0 {
+        let children = rules.get(&next_bag).unwrap();
+        for (child_num, child_color) in children.iter() {
+            if *child_num != 0 {
+                let meta = next_count * child_num;
+                unvisited_bags.push((meta, child_color));
+                bags += meta;
+            }
+        }
+    }
+}
+~~~
+

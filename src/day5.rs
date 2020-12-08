@@ -4,11 +4,11 @@ pub fn part1(lines: &Vec<String>) -> PartResult {
     let best_seat = lines
         .iter()
         .map(|seat| {
-            let count = seat.len() - 1;
             seat.chars()
+                .rev()
                 .enumerate()
                 .filter(|(_, c)| *c == 'B' || *c == 'R')
-                .fold(0, |a, (i, _)| a | (1 << (count - i)))
+                .fold(0, |a, (i, _)| a | (1 << i))
         })
         .max()
         .unwrap();
@@ -19,11 +19,12 @@ pub fn part2(lines: &Vec<String>) -> PartResult {
     let mut seats: Vec<u32> = lines
         .iter()
         .map(|seat| {
-            let count = seat.len() - 1;
+            // let count = seat.len() - 1;
             seat.chars()
+                .rev()
                 .enumerate()
                 .filter(|(_, c)| *c == 'B' || *c == 'R')
-                .fold(0, |a, (i, _)| a | (1 << (count - i)))
+                .fold(0, |a, (i, _)| a | (1 << i))
         })
         .collect();
     seats.sort_unstable();
