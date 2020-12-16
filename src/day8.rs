@@ -87,10 +87,10 @@ fn test_run(mut program: Vec<(Operation, i32)>, instruction: usize) -> Option<i3
             _ => current += 1,
         }
         if visited.contains(&current) {
-            println!("reached loop, quitting");
+            // println!("reached loop, quitting");
             return None;
         } else if current >= program.len() {
-            println!("reached eof, done");
+            // println!("reached eof, done");
             return Some(accumulator);
         }
     }
