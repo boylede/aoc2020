@@ -19,6 +19,7 @@ const YEAR: i32 = 2020;
 const AOC_URL: &str = "https://adventofcode.com/";
 
 pub mod day1;
+pub mod day10;
 pub mod day2;
 pub mod day3;
 pub mod day4;
@@ -48,6 +49,7 @@ pub const DAYS: &[Day] = &[
     day_element!(day7, 7),
     day_element!(day8, 8),
     day_element!(day9, 9),
+    day_element!(day10, 10),
 ];
 
 pub enum RunError {
