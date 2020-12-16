@@ -212,3 +212,13 @@ while unvisited_bags.len() > 0 {
 }
 ~~~
 
+## Day 8
+66700 ns / 2 ms
+
+## Day 9
+51800 ns / 36 ms
+
+## Day 10
+18300 ns / 15200 ns
+
+This day was tough, and a real treat to solve. The instructions hinted that a brute force solution would not be feasible, so I am glad that I was able to find a technique that would reduce the number of loops needed. My solution for part 2 is faster than my solution to part 1. My initial attempt only tried to count the paths by brute force, at it took me some time to make sure it was valid on the test cases. But the actual input results in an astronomically longer calculation so as expected I had to find a new way. looking at some debug prints, I realized that the input data does contain one saving grace: there are certain pivot points through which all paths must walk. Knowing that I realized I could count the number of paths between each pivot point and simply multiply them all together. Writing that code took less time than debugging the brute force version.

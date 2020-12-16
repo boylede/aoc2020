@@ -65,7 +65,7 @@ pub fn part2(lines: &Vec<String>) -> PartResult {
 }
 
 fn test_run(mut program: Vec<(Operation, i32)>, instruction: usize) -> Option<i32> {
-    let (op, arg) = &mut program[instruction];
+    let (op, _) = &mut program[instruction];
     use Operation::*;
     *op = match op {
         Jmp => Nop,
