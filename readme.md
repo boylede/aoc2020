@@ -226,3 +226,18 @@ This was a simple bit of code, reminiscent of certain patterns I've seen in comp
 18300 ns / 15200 ns
 
 This day was tough, and a real treat to solve. The instructions hinted that a brute force solution would not be feasible, so I am glad that I was able to find a technique that would reduce the number of loops needed. My solution for part 2 is faster than my solution to part 1. My initial attempt only tried to count the paths by brute force, at it took me some time to make sure it was valid on the test cases. But the actual input results in an astronomically longer calculation so as expected I had to find a new way. Looking at some debug prints, I realized that the input data does contain one saving grace: there are certain pivot points through which all paths must walk. Knowing that I realized I could count the number of paths between each pivot point and simply multiply them all together. Writing that code took less time than debugging the brute force version.
+
+
+## Day 11
+303 ms / 476 ms
+
+This one was a cellular automata / conway's game of life simulation. I enjoy these types of sims and this one had some variations from the normal "game of life" implementation in that you are working on a map with "holes" in it so some spaces are always free.
+
+This is my slowest AOC entry this year, I haven't yet gone back and improved it.
+
+## Day 12 
+58700 ns / 48700 ms
+
+This one was a fun little simulation of a boat moving along a path. Each step can be transformed to a delta-position and then those can be summed to get the final destination. Part 2 added the complexity of having most commands move a point around that you would travel towards, but this is doesn't require a change to the structure of the code only some changes to the math.
+
+I think this has some relationship with vector graphics, most vector graphics libraries i've worked with have you draw shapes by moving to the next point one command at a time.
