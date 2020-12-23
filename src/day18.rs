@@ -2,16 +2,22 @@ use crate::PartResult;
 use std::collections::HashMap;
 use std::io::{BufRead, Cursor, Read, Seek};
 
-
 #[derive(Debug, Clone)]
 enum ParseState {
+    // the empty state
     Free,
-    Left(Box<Expression>),
-    Op(Box<Expression>, Operation),
-    Right(Box<Expression>),
+    // consumed a left-hand-side
+    Left(Factor),
+    // consumed left-hand-side and operation
+    Op(Factor, Operation),
+    // finished an expression
+    Right(Factor),
+    // a nested expression on the left-side
     Parentheses(Box<ParseState>),
-    BubbleParen(Box<Expression>),
-    RightParen(Box<Expression>, Operation, Box<ParseState>),
+    // a nested expression on the right side, with left-side and operator
+    RightParen(Factor, Operation, Box<ParseState>),
+    // bubble up closed parens
+    BubbleParen(Factor),
 }
 
 impl ParseState {
@@ -23,12 +29,12 @@ impl ParseState {
         match self {
             Free => {
                 if c == '(' {
-                    Parentheses(Box::new(ParseState::Free))
+                    Parentheses(Box::new(Free))
                 } else {
                     let num = c.to_string().parse::<i64>().unwrap();
-                    Left(Box::new(Expression::Factor(Factor::Number(num))))
-                }           
-            },
+                    Left(Factor::Number(num))
+                }
+            }
             Left(e) => {
                 let op = match c {
                     '+' => Operation::Addition,
@@ -36,58 +42,37 @@ impl ParseState {
                     _ => panic!("found unexpected operator"),
                 };
                 Op(e, op)
-            },
-            Op(e,o) => {
-                match c {
-                    '(' => {
-                        RightParen(e, o, Box::new(Free))
-                    }
-                    _ => {
-                        let num = c.to_string().parse::<i64>().unwrap();
-                        let r = Factor::Number(num);
-                        match o {
-                            Operation::Addition => Right(Box::new(Expression::Addition(Factor::Expression(e), r))),
-                            Operation::Multiplication => Right(Box::new(Expression::Multiplication(Factor::Expression(e), r))),
-                        }
-                    }
+            }
+            Op(left, o) => match c {
+                '(' => RightParen(left, o, Box::new(Free)),
+                _ => {
+                    let num = c.to_string().parse::<i64>().unwrap();
+                    let right = Factor::Number(num);
+                    Right(o.express(left, right).factor())
                 }
             },
-            Right(e) => {
-                match c {
-                    '+' => {
-                        Op(e, Operation::Addition)
-                    }
-                    '*' => {
-                        Op(e, Operation::Multiplication)
-                    }
-                    ')' => BubbleParen(e),
-                    _ => panic!("unexpected input {}", c),
-                }
+            Right(e) => match c {
+                '+' => Op(e, Operation::Addition),
+                '*' => Op(e, Operation::Multiplication),
+                ')' => BubbleParen(e),
+                _ => panic!("unexpected input {}", c),
             },
             Parentheses(p) => {
                 let next = p.push(c);
                 match next {
-                    BubbleParen(ee) => {
-                        Left(ee)
-                    },
+                    BubbleParen(ee) => Left(ee),
                     _ => Parentheses(Box::new(next)),
                 }
-            },
+            }
             BubbleParen(_) => {
                 // bubbleparens are stripped prior to this loop
                 unreachable!()
             }
-            RightParen(e, o, p) => {
+            RightParen(left, o, p) => {
                 let next = p.push(c);
                 match next {
-                    BubbleParen(ee) => {
-                        let expression = match o {
-                            Operation::Addition => Expression::Addition(Factor::Expression(e), Factor::Expression(ee)),
-                            Operation::Multiplication => Expression::Multiplication(Factor::Expression(e), Factor::Expression(ee)),
-                        };
-                        Right(Box::new(expression))
-                    },
-                    _ => RightParen(e, o, Box::new(next)),
+                    BubbleParen(right) => Right(o.express(left, right).factor()),
+                    _ => RightParen(left, o, Box::new(next)),
                 }
             }
         }
@@ -95,13 +80,12 @@ impl ParseState {
     fn express(self) -> Expression {
         use ParseState::*;
         match self {
-            Right(e) => *e,
+            Right(e) => Expression::Factor(e),
             Parentheses(p) => p.express(),
             _ => panic!("unexpected end of line"),
         }
     }
 }
-
 
 /*
  BNF
@@ -161,20 +145,20 @@ fn consume_expression(stream: &mut Walk) -> Result<Expression, ()> {
             // if let Ok(factor_b) = maybe_factor {
             println!("factor b: {}", factor_b);
             Ok(Expression::Addition(factor_b, factor_a))
-            // } else {
-            //     println!("f1");
-            //     Err(())
-            // }
+        // } else {
+        //     println!("f1");
+        //     Err(())
+        // }
         } else if maybe_operation == '*' {
             println!("*");
             let factor_b = consume_factor(stream)?;
             // if let Ok(factor_b) = maybe_factor {
             println!("factor b: {}", factor_b);
             Ok(Expression::Multiplication(factor_b, factor_a))
-            // } else {
-            //     println!("f2");
-            //     Err(())
-            // }
+        // } else {
+        //     println!("f2");
+        //     Err(())
+        // }
         } else {
             println!("consumed {}, didn't want it yet", maybe_operation);
             stream.backward();
@@ -187,7 +171,6 @@ fn consume_expression(stream: &mut Walk) -> Result<Expression, ()> {
         println!("found EOF");
         Ok(Expression::Factor(factor_a))
     }
-
 }
 
 fn consume_factor(stream: &mut Walk) -> Result<Factor, ()> {
@@ -222,6 +205,15 @@ enum Operation {
     Multiplication,
 }
 
+impl Operation {
+    fn express(self, a: Factor, b: Factor) -> Expression {
+        match self {
+            Operation::Addition => Expression::Addition(a, b),
+            Operation::Multiplication => Expression::Multiplication(a, b),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 enum Expression {
     Factor(Factor),
@@ -242,6 +234,9 @@ impl Expression {
             Expression::Addition(e, f) => e.evaluate() + f.evaluate(),
             Expression::Multiplication(e, f) => e.evaluate() * f.evaluate(),
         }
+    }
+    fn factor(self) -> Factor {
+        Factor::Expression(Box::new(self))
     }
 }
 
@@ -277,19 +272,22 @@ pub fn part1(lines: &Vec<String>) -> PartResult {
         .iter()
         // .inspect(|expr| println!("{}", expr))
         // .filter_map(|line| {
-            // println!("------------------------------------");
-            // consume_expression(&mut Walk::wrap(line)).ok()
+        // println!("------------------------------------");
+        // consume_expression(&mut Walk::wrap(line)).ok()
         // })
         // .inspect(|expr| println!("{}", expr))
         // .map(|e|e.evaluate())
         // .inspect(|result| println!("{:?}", result))
         // .sum();
-        .map(|line| line.chars().filter(|c| *c != ' ').fold(ParseState::Free, |s, c|s.push(c)))
+        .map(|line| {
+            line.chars()
+                .filter(|c| *c != ' ')
+                .fold(ParseState::Free, |s, c| s.push(c))
+        })
         // .inspect(|expr| println!("{:?}", expr))
-        .map(|s|s.express().evaluate())
+        .map(|s| s.express().evaluate())
         .sum();
-        // .fold(ParseState::Free, |s, c|)
-
+    // .fold(ParseState::Free, |s, c|)
 
     Ok(total.to_string())
 }
@@ -314,7 +312,6 @@ impl<'a> Walk<'a> {
                 break c;
             }
         }
-        
     }
     fn backward(&mut self) {
         self.index -= 1;
