@@ -51,7 +51,7 @@ pub fn part2(lines: &Vec<String>) -> PartResult {
     let mut count = 0;
     loop {
         n += 1;
-        
+
         let test_number = (max * n) + max_i;
         let correct = rules
             .iter()
@@ -62,7 +62,7 @@ pub fn part2(lines: &Vec<String>) -> PartResult {
             successes.push(test_number);
             // rise = test_number;
             // break;
-            count +=1;
+            count += 1;
         }
         if count > 10 {
             println!("");
@@ -72,6 +72,15 @@ pub fn part2(lines: &Vec<String>) -> PartResult {
     let rise = successes.iter().next().unwrap();
     println!("slope: {}, rise: {}, result: {}", slope, rise, slope - rise);
 
+    for (offset, bus) in rules.iter() {
+        println!(
+            "{} - {} = {} * {}",
+            rise,
+            offset,
+            bus,
+            (rise - offset) / bus
+        );
+    }
 
     Ok((slope - rise).to_string())
 }
