@@ -26,6 +26,9 @@ pub struct Config {
     /// Provide alternate input for testing.
     #[clap(short = 'i', long = "input")]
     pub input: Option<String>,
+    /// run the provided examples
+    #[clap(short = 'e', long = "examples")]
+    pub examples: bool,
     /// Cache result for regression testing.
     #[clap(long = "accept")]
     pub accept: bool,
@@ -60,7 +63,13 @@ fn run_day(day: &Day, config: &Config) {
         println!("Clearing cache...");
         day.clear_cache();
     }
-    if !config.offline && config.input.is_none() {
+    if config.examples {
+        println!("running examples for day {}...", day.index);
+        match day.run_with_examples() {
+            Ok(_) => (),
+            Err(e) => {print_error(e)},
+        }
+    } else if !config.offline && config.input.is_none() {
         let session = if let Some(session) = &config.session {
             Session::new(&session)
         } else {

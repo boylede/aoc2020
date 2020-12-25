@@ -183,6 +183,58 @@ impl Day {
         let input = pre_parse_input(file);
         self.run(input)
     }
+    pub fn run_with_examples(&self) -> Result<(), RunError> {
+        // {
+        //     let filename = format!("examples/sample{}.txt", self.index);
+        //     let e = ExampleFile {
+        //         examples: vec![Example {
+        //             result: ("this".to_string(), "this".to_string()),
+        //             input: ExampleInput::Text("something".to_string()),
+        //         }],
+        //     };
+        //     let mut file = fs::OpenOptions::new()
+        //         .read(true)
+        //         .write(true)
+        //         .create(true)
+        //         .open(filename)
+        //         .map_err(|_| RunError::InputError)?;
+        //     ron::ser::to_writer(&mut file, &e);
+        // }
+        let filename = format!("examples/day{}.txt", self.index);
+        println!("loading {}", filename);
+        let mut file = fs::OpenOptions::new()
+            .read(true)
+            .write(false)
+            .create(false)
+            .open(filename)
+            .map_err(|_| RunError::InputError)?;
+        let examples: ExampleFile =
+            ron::de::from_reader(&mut file).map_err(|_| RunError::InputError)?;
+        for example in examples.examples {
+            let input = match example.input {
+                ExampleInput::File(_) => {
+                    unimplemented!()
+                }
+                ExampleInput::Text(txt) => {
+                    txt.lines().map(|s| s.to_string()).collect::<Vec<String>>()
+                }
+            };
+            let output = self.run(input);
+            match output {
+                Ok(results) => {
+                    if results == example.result {
+                        println!("results validated.");
+                    } else {
+                        println!("results did not validate");
+                    }
+                }
+                Err(e) => {
+                    unimplemented!()
+                }
+            }
+        }
+        Ok(())
+    }
     pub fn cache_result(&self, result: (String, String)) -> Result<(), RunError> {
         let file_path = result_cache_path(self.index);
         let mut file = fs::OpenOptions::new()
@@ -432,4 +484,21 @@ impl Session {
         buffer.flush().map_err(|_| SessionError::BufferError)?;
         Ok(())
     }
+}
+
+#[derive(Serialize, Deserialize)]
+struct ExampleFile {
+    examples: Vec<Example>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct Example {
+    result: (String, String),
+    input: ExampleInput,
+}
+
+#[derive(Serialize, Deserialize)]
+enum ExampleInput {
+    File(String),
+    Text(String),
 }
