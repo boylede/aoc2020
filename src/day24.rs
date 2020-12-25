@@ -18,12 +18,15 @@ pub fn part1(lines: &Vec<String>) -> PartResult {
                 .map(|dir| dir.to_coords())
                 .fold((0, 0, 0), |a, d| (a.0 + d.0, a.1 + d.1, a.2 + d.2))
         })
-        .collect::<Vec<(i32,i32,i32)>>();
-    let mut visited: HashMap<(i32,i32,i32), u32> = HashMap::new();
+        .collect::<Vec<(i32, i32, i32)>>();
+    let mut visited: HashMap<(i32, i32, i32), u32> = HashMap::new();
     for tile in flip_tiles.into_iter() {
         *visited.entry(tile).or_insert(0) += 1;
     }
-    let black = visited.drain().filter(|(tile, turns)| turns % 2 == 1).count();
+    let black = visited
+        .drain()
+        .filter(|(tile, turns)| turns % 2 == 1)
+        .count();
     Ok(black.to_string())
 }
 
