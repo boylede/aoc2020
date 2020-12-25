@@ -30,6 +30,12 @@ pub mod day17;
 pub mod day18;
 pub mod day19;
 pub mod day2;
+pub mod day20;
+pub mod day21;
+pub mod day22;
+pub mod day23;
+pub mod day24;
+pub mod day25;
 pub mod day3;
 pub mod day4;
 pub mod day5;
@@ -68,8 +74,15 @@ pub const DAYS: &[Day] = &[
     day_element!(day17, 17),
     day_element!(day18, 18),
     day_element!(day19, 19),
+    day_element!(day20, 20),
+    day_element!(day21, 21),
+    day_element!(day22, 22),
+    day_element!(day23, 23),
+    day_element!(day24, 24),
+    day_element!(day25, 25),
 ];
 
+#[derive(Debug)]
 pub enum RunError {
     SessionFailed(SessionError),
     CacheInError,
@@ -399,6 +412,7 @@ fn node_to_markdown<W: Write>(parent: Node, buf: &mut W) -> Result<(), std::io::
     Ok(())
 }
 
+#[derive(Debug)]
 pub enum SessionError {
     TokenFormat,
     IoError(String),
